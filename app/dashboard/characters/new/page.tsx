@@ -1,9 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+    FormEvent,
+    ReactNode,
+    useMemo,
+    useState,
+} from "react";
 
-const races = [
+import { createClient } from "@/lib/supabase/client";
+
+type FormErrors = {
+    name?: string;
+    race?: string;
+    characterClass?: string;
+};
+
+type SelectionOption = {
+    name: string;
+    icon: string;
+    description: string;
+};
+
+const races: SelectionOption[] = [
     {
         name: "Mensch",
         icon: "🧑",
@@ -36,7 +56,7 @@ const races = [
     },
 ];
 
-const characterClasses = [
+const characterClasses: SelectionOption[] = [
     {
         name: "Krieger",
         icon: "⚔️",
@@ -69,25 +89,31 @@ const characterClasses = [
     },
 ];
 
-type FormErrors = {
-    name?: string;
-    race?: string;
-    characterClass?: string;
-};
-
 export default function NewCharacterPage() {
+    const router = useRouter();
+
+    const supabase = useMemo(() => createClient(), []);
+
     const [name, setName] = useState("");
     const [race, setRace] = useState("");
     const [characterClass, setCharacterClass] = useState("");
     const [background, setBackground] = useState("");
     const [appearance, setAppearance] = useState("");
+
     const [errors, setErrors] = useState<FormErrors>({});
-    const [showSuccess, setShowSuccess] = useState(false);
+    const [saveError, setSaveError] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
 
     const completedFields = useMemo(() => {
-        return [name, race, characterClass, background, appearance].filter(
-            (value) => value.trim().length > 0,
-        ).length;
+        const values = [
+            name,
+            race,
+            characterClass,
+            background,
+            appearance,
+        ];
+
+        return values.filter((value) => value.trim().length > 0).length;
     }, [name, race, characterClass, background, appearance]);
 
     const progress = completedFields * 20;
@@ -96,7 +122,8 @@ export default function NewCharacterPage() {
         const nextErrors: FormErrors = {};
 
         if (name.trim().length < 2) {
-            nextErrors.name = "Der Name muss mindestens 2 Zeichen enthalten.";
+            nextErrors.name =
+                "Der Name muss mindestens 2 Zeichen enthalten.";
         }
 
         if (!race) {
@@ -104,7 +131,8 @@ export default function NewCharacterPage() {
         }
 
         if (!characterClass) {
-            nextErrors.characterClass = "Bitte wähle eine Klasse aus.";
+            nextErrors.characterClass =
+                "Bitte wähle eine Klasse aus.";
         }
 
         setErrors(nextErrors);
@@ -112,9 +140,16 @@ export default function NewCharacterPage() {
         return Object.keys(nextErrors).length === 0;
     }
 
-    function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    async function handleSubmit(
+        event: FormEvent<HTMLFormElement>,
+    ) {
         event.preventDefault();
-        setShowSuccess(false);
+
+        if (isSaving) {
+            return;
+        }
+
+        setSaveError("");
 
         if (!validateForm()) {
             window.scrollTo({
@@ -125,16 +160,74 @@ export default function NewCharacterPage() {
             return;
         }
 
-        setShowSuccess(true);
+        setIsSaving(true);
 
-        console.log({
-            name: name.trim(),
-            race,
-            class: characterClass,
-            background: background.trim(),
-            appearance: appearance.trim(),
-            level: 1,
-        });
+        try {
+            const {
+                data: { user },
+                error: userError,
+            } = await supabase.auth.getUser();
+
+            if (userError) {
+                throw new Error(
+                    `Benutzer konnte nicht geprüft werden: ${userError.message}`,
+                );
+            }
+
+            if (!user) {
+                setSaveError(
+                    "Du musst angemeldet sein, bevor du einen Charakter erstellen kannst.",
+                );
+
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from("characters")
+                .insert({
+                    user_id: user.id,
+                    name: name.trim(),
+                    race,
+                    character_class: characterClass,
+                    background: background.trim() || null,
+                    appearance: appearance.trim() || null,
+                    level: 1,
+                    experience: 0,
+                })
+                .select("id")
+                .single();
+
+            if (error) {
+                throw new Error(error.message);
+            }
+
+            if (!data?.id) {
+                throw new Error(
+                    "Der Charakter wurde gespeichert, aber es wurde keine ID zurückgegeben.",
+                );
+            }
+
+            router.push(`/dashboard/characters/${data.id}`);
+            router.refresh();
+        } catch (error) {
+            console.error(
+                "Fehler beim Speichern des Charakters:",
+                error,
+            );
+
+            setSaveError(
+                error instanceof Error
+                    ? error.message
+                    : "Der Charakter konnte nicht gespeichert werden.",
+            );
+
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth",
+            });
+        } finally {
+            setIsSaving(false);
+        }
     }
 
     return (
@@ -163,14 +256,18 @@ export default function NewCharacterPage() {
                             </h1>
 
                             <p className="mt-4 max-w-2xl leading-7 text-gray-400">
-                                Gib deinem Charakter einen Namen, wähle seine Herkunft und
-                                entscheide, welchen Weg er in Mythoria beschreiten wird.
+                                Gib deinem Charakter einen Namen, wähle seine
+                                Herkunft und entscheide, welchen Weg er in
+                                Mythoria beschreiten wird.
                             </p>
                         </div>
 
                         <div className="w-full max-w-sm">
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-500">Grunddaten</span>
+                                <span className="text-gray-500">
+                                    Grunddaten
+                                </span>
+
                                 <span className="font-black text-emerald-400">
                                     {progress} %
                                 </span>
@@ -186,13 +283,17 @@ export default function NewCharacterPage() {
                     </div>
                 </section>
 
-                {showSuccess && (
-                    <div className="mt-8 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-5 text-emerald-200">
-                        <p className="font-black">Der Held ist bereit.</p>
+                {saveError && (
+                    <div
+                        role="alert"
+                        className="mt-8 rounded-2xl border border-red-400/30 bg-red-400/10 p-5"
+                    >
+                        <p className="font-black text-red-300">
+                            Charakter konnte nicht gespeichert werden
+                        </p>
 
-                        <p className="mt-1 text-sm text-emerald-200/70">
-                            Das Formular funktioniert. Im nächsten Schritt speichern wir
-                            diese Daten in Supabase.
+                        <p className="mt-2 text-sm leading-6 text-red-200/70">
+                            {saveError}
                         </p>
                     </div>
                 )}
@@ -208,28 +309,36 @@ export default function NewCharacterPage() {
                             description="Jede Legende beginnt mit einem Namen."
                         >
                             <label className="block">
-                                <span className="text-sm font-black">Charaktername *</span>
+                                <span className="text-sm font-black">
+                                    Charaktername *
+                                </span>
 
                                 <input
                                     type="text"
                                     value={name}
+                                    disabled={isSaving}
+                                    maxLength={40}
+                                    autoComplete="off"
+                                    placeholder="Zum Beispiel: Kael Schattenklinge"
                                     onChange={(event) => {
                                         setName(event.target.value);
+
                                         setErrors((current) => ({
                                             ...current,
                                             name: undefined,
                                         }));
                                     }}
-                                    maxLength={40}
-                                    placeholder="Zum Beispiel: Kael Schattenklinge"
-                                    className={`mt-3 w-full rounded-xl border bg-black/40 px-5 py-4 outline-none transition ${errors.name
+                                    className={`mt-3 w-full rounded-xl border bg-black/40 px-5 py-4 outline-none transition disabled:cursor-not-allowed disabled:opacity-60 ${errors.name
                                             ? "border-red-400/70"
                                             : "border-white/10 focus:border-emerald-400"
                                         }`}
                                 />
 
                                 <div className="mt-2 flex justify-between gap-4 text-sm">
-                                    <span className="text-red-400">{errors.name}</span>
+                                    <span className="text-red-400">
+                                        {errors.name}
+                                    </span>
+
                                     <span className="ml-auto text-gray-600">
                                         {name.length}/40
                                     </span>
@@ -247,11 +356,13 @@ export default function NewCharacterPage() {
                                     <SelectionCard
                                         key={option.name}
                                         selected={race === option.name}
+                                        disabled={isSaving}
                                         icon={option.icon}
                                         title={option.name}
                                         description={option.description}
                                         onClick={() => {
                                             setRace(option.name);
+
                                             setErrors((current) => ({
                                                 ...current,
                                                 race: undefined,
@@ -262,7 +373,9 @@ export default function NewCharacterPage() {
                             </div>
 
                             {errors.race && (
-                                <p className="mt-4 text-sm text-red-400">{errors.race}</p>
+                                <p className="mt-4 text-sm text-red-400">
+                                    {errors.race}
+                                </p>
                             )}
                         </FormSection>
 
@@ -275,12 +388,16 @@ export default function NewCharacterPage() {
                                 {characterClasses.map((option) => (
                                     <SelectionCard
                                         key={option.name}
-                                        selected={characterClass === option.name}
+                                        selected={
+                                            characterClass === option.name
+                                        }
+                                        disabled={isSaving}
                                         icon={option.icon}
                                         title={option.name}
                                         description={option.description}
                                         onClick={() => {
                                             setCharacterClass(option.name);
+
                                             setErrors((current) => ({
                                                 ...current,
                                                 characterClass: undefined,
@@ -303,15 +420,20 @@ export default function NewCharacterPage() {
                             description="Welche Ereignisse haben deinen Helden geprägt?"
                         >
                             <label className="block">
-                                <span className="sr-only">Hintergrundgeschichte</span>
+                                <span className="sr-only">
+                                    Hintergrundgeschichte
+                                </span>
 
                                 <textarea
                                     value={background}
-                                    onChange={(event) => setBackground(event.target.value)}
+                                    disabled={isSaving}
                                     maxLength={800}
                                     rows={7}
                                     placeholder="Woher stammt dein Charakter? Was treibt ihn an? Welche Geheimnisse trägt er mit sich?"
-                                    className="w-full resize-y rounded-xl border border-white/10 bg-black/40 px-5 py-4 leading-7 outline-none transition focus:border-emerald-400"
+                                    onChange={(event) =>
+                                        setBackground(event.target.value)
+                                    }
+                                    className="w-full resize-y rounded-xl border border-white/10 bg-black/40 px-5 py-4 leading-7 outline-none transition focus:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
                                 />
 
                                 <p className="mt-2 text-right text-sm text-gray-600">
@@ -330,11 +452,14 @@ export default function NewCharacterPage() {
 
                                 <textarea
                                     value={appearance}
-                                    onChange={(event) => setAppearance(event.target.value)}
+                                    disabled={isSaving}
                                     maxLength={500}
                                     rows={5}
                                     placeholder="Haarfarbe, Augen, Kleidung, Narben, Tattoos oder besondere Merkmale …"
-                                    className="w-full resize-y rounded-xl border border-white/10 bg-black/40 px-5 py-4 leading-7 outline-none transition focus:border-emerald-400"
+                                    onChange={(event) =>
+                                        setAppearance(event.target.value)
+                                    }
+                                    className="w-full resize-y rounded-xl border border-white/10 bg-black/40 px-5 py-4 leading-7 outline-none transition focus:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
                                 />
 
                                 <p className="mt-2 text-right text-sm text-gray-600">
@@ -346,16 +471,27 @@ export default function NewCharacterPage() {
                         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
                             <Link
                                 href="/dashboard/characters"
-                                className="rounded-xl border border-white/10 px-7 py-4 text-center font-bold text-gray-300 transition hover:border-white/30"
+                                className={`rounded-xl border border-white/10 px-7 py-4 text-center font-bold text-gray-300 transition hover:border-white/30 ${isSaving
+                                        ? "pointer-events-none opacity-50"
+                                        : ""
+                                    }`}
                             >
                                 Abbrechen
                             </Link>
 
                             <button
                                 type="submit"
-                                className="rounded-xl bg-emerald-400 px-8 py-4 font-black text-black transition hover:-translate-y-1 hover:bg-emerald-300"
+                                disabled={isSaving}
+                                className="rounded-xl bg-emerald-400 px-8 py-4 font-black text-black transition hover:-translate-y-1 hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                             >
-                                Charakter vorbereiten
+                                {isSaving ? (
+                                    <span className="flex items-center justify-center gap-3">
+                                        <span className="h-5 w-5 animate-spin rounded-full border-2 border-black/30 border-t-black" />
+                                        Held wird geschmiedet …
+                                    </span>
+                                ) : (
+                                    "Charakter speichern"
+                                )}
                             </button>
                         </div>
                     </div>
@@ -412,7 +548,7 @@ function FormSection({
     number: string;
     title: string;
     description: string;
-    children: React.ReactNode;
+    children: ReactNode;
 }) {
     return (
         <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
@@ -422,8 +558,13 @@ function FormSection({
                 </div>
 
                 <div>
-                    <h2 className="text-2xl font-black">{title}</h2>
-                    <p className="mt-1 text-gray-500">{description}</p>
+                    <h2 className="text-2xl font-black">
+                        {title}
+                    </h2>
+
+                    <p className="mt-1 text-gray-500">
+                        {description}
+                    </p>
                 </div>
             </div>
 
@@ -434,12 +575,14 @@ function FormSection({
 
 function SelectionCard({
     selected,
+    disabled,
     icon,
     title,
     description,
     onClick,
 }: {
     selected: boolean;
+    disabled: boolean;
     icon: string;
     title: string;
     description: string;
@@ -448,23 +591,28 @@ function SelectionCard({
     return (
         <button
             type="button"
+            disabled={disabled}
             onClick={onClick}
             aria-pressed={selected}
-            className={`rounded-2xl border p-5 text-left transition ${selected
+            className={`rounded-2xl border p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${selected
                     ? "border-emerald-400 bg-emerald-400/10"
                     : "border-white/10 bg-black/20 hover:border-emerald-400/40"
                 }`}
         >
             <span className="text-3xl">{icon}</span>
 
-            <span className="mt-4 block font-black">{title}</span>
+            <span className="mt-4 block font-black">
+                {title}
+            </span>
 
             <span className="mt-2 block text-sm leading-6 text-gray-500">
                 {description}
             </span>
 
             <span
-                className={`mt-4 block text-xs font-bold uppercase tracking-wider ${selected ? "text-emerald-400" : "text-gray-700"
+                className={`mt-4 block text-xs font-bold uppercase tracking-wider ${selected
+                        ? "text-emerald-400"
+                        : "text-gray-700"
                     }`}
             >
                 {selected ? "Ausgewählt" : "Auswählen"}
@@ -488,17 +636,9 @@ function CharacterPreview({
         <aside className="top-28 lg:sticky">
             <div className="overflow-hidden rounded-3xl border border-emerald-400/20 bg-black/60">
                 <div className="flex h-64 items-center justify-center bg-gradient-to-br from-emerald-950 via-black to-black text-8xl">
-                    {characterClass === "Magier"
-                        ? "🔮"
-                        : characterClass === "Waldläufer"
-                            ? "🏹"
-                            : characterClass === "Schurke"
-                                ? "🗡️"
-                                : characterClass === "Paladin"
-                                    ? "🛡️"
-                                    : characterClass === "Nekromant"
-                                        ? "💀"
-                                        : "⚔️"}
+                    <CharacterClassIcon
+                        characterClass={characterClass}
+                    />
                 </div>
 
                 <div className="p-6">
@@ -511,12 +651,18 @@ function CharacterPreview({
                     </h2>
 
                     <p className="mt-2 text-gray-400">
-                        {race || "Keine Rasse"} · {characterClass || "Keine Klasse"}
+                        {race || "Keine Rasse"} ·{" "}
+                        {characterClass || "Keine Klasse"}
                     </p>
 
                     <div className="mt-5 flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                        <span className="text-sm text-gray-500">Startlevel</span>
-                        <span className="font-black text-emerald-400">Level 1</span>
+                        <span className="text-sm text-gray-500">
+                            Startlevel
+                        </span>
+
+                        <span className="font-black text-emerald-400">
+                            Level 1
+                        </span>
                     </div>
 
                     <p className="mt-5 line-clamp-6 leading-7 text-gray-500">
@@ -530,8 +676,16 @@ function CharacterPreview({
                 <p className="font-black">Pflichtangaben</p>
 
                 <div className="mt-4 space-y-3 text-sm">
-                    <Requirement completed={name.trim().length >= 2} label="Name" />
-                    <Requirement completed={Boolean(race)} label="Rasse" />
+                    <Requirement
+                        completed={name.trim().length >= 2}
+                        label="Name"
+                    />
+
+                    <Requirement
+                        completed={Boolean(race)}
+                        label="Rasse"
+                    />
+
                     <Requirement
                         completed={Boolean(characterClass)}
                         label="Klasse"
@@ -540,6 +694,35 @@ function CharacterPreview({
             </div>
         </aside>
     );
+}
+
+function CharacterClassIcon({
+    characterClass,
+}: {
+    characterClass: string;
+}) {
+    switch (characterClass) {
+        case "Magier":
+            return <span>🔮</span>;
+
+        case "Waldläufer":
+            return <span>🏹</span>;
+
+        case "Schurke":
+            return <span>🗡️</span>;
+
+        case "Paladin":
+            return <span>🛡️</span>;
+
+        case "Nekromant":
+            return <span>💀</span>;
+
+        case "Krieger":
+            return <span>⚔️</span>;
+
+        default:
+            return <span>⚔️</span>;
+    }
 }
 
 function Requirement({
@@ -551,7 +734,13 @@ function Requirement({
 }) {
     return (
         <div className="flex items-center justify-between">
-            <span className={completed ? "text-gray-300" : "text-gray-600"}>
+            <span
+                className={
+                    completed
+                        ? "text-gray-300"
+                        : "text-gray-600"
+                }
+            >
                 {label}
             </span>
 
@@ -572,6 +761,8 @@ function BackgroundEffects() {
     return (
         <div className="pointer-events-none fixed inset-0 overflow-hidden">
             <div className="absolute left-1/2 top-[-300px] h-[750px] w-[750px] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-[170px]" />
+
+            <div className="absolute bottom-[-300px] right-[-180px] h-[600px] w-[600px] rounded-full bg-green-900/10 blur-[170px]" />
 
             <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] [background-size:80px_80px]" />
 
