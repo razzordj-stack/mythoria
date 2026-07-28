@@ -9,7 +9,7 @@ import {
     useState,
 } from "react";
 
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserClient } from "@supabase/ssr";
 
 type FormErrors = {
     name?: string;
