@@ -8,26 +8,12 @@ export default function Home() {
     return (
         <div className="min-h-screen bg-[#050505] text-white">
             {/* Navigation */}
-            <nav className="flex items-center justify-between px-6 py-5 max-w-6xl mx-auto">
-                <div className="flex items-center gap-3 group cursor-pointer">
-                    <Image
-                        src="/logo.png"
-                        alt="Mythoria Logo"
-                        width={48}
-                        height={48}
-                        className="rounded-lg transition-transform duration-300 group-hover:scale-105"
-                    />
-                    <span className="text-xl font-semibold tracking-wide text-zinc-100 group-hover:text-emerald-300 transition-colors duration-300">
-                        Mythoria
-                    </span>
-                </div>
-                <a
-                    href="#waitlist"
-                    className="px-5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 text-sm font-medium"
-                >
-                    Early Access
-                </a>
-            </nav>
+            <a
+                href="/login"
+                className="px-5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 text-sm font-medium"
+            >
+                Anmelden
+            </a>
 
             {/* Hero Section */}
             <section className="max-w-4xl mx-auto px-6 pt-16 pb-24 text-center">
@@ -145,6 +131,7 @@ export default function Home() {
 /* ========== Wartelisten-Formular mit Supabase ========== */
 
 function WaitlistForm() {
+    const supabase = createClient();
     const [email, setEmail] = useState("");
     const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
     const [errorMessage, setErrorMessage] = useState("");
@@ -208,7 +195,6 @@ function WaitlistForm() {
         </div>
     );
 }
-
 /* ========== Hilfskomponenten ========== */
 
 function FeatureCard({ title, description }: { title: string; description: string }) {
