@@ -76,6 +76,11 @@ const RESPONSE_SCHEMA = {
   ],
 } as const;
 
+const OPENROUTER_JSON_INSTRUCTIONS = `Antworte ausschließlich mit einem einzelnen JSON-Objekt ohne Markdown oder Begleittext. Verwende exakt diese Felder:
+{"narrative":"80 bis 4000 Zeichen","choices":["genau drei unterschiedliche Optionen"],"scene":"Szenenname","effects":{"health":0,"mana":0,"gold":0,"experience":0},"itemRewards":[],"questUpdates":[]}
+effects-Grenzen: health -25 bis 20, mana -20 bis 15, gold -20 bis 50, experience 0 bis 40.
+itemRewards enthält höchstens ein Objekt mit name, description, itemType und rarity. questUpdates enthält höchstens ein Objekt mit questId, progress und note.`;
+
 type AdventureResponse = {
   narrative: string;
   choices: string[];
@@ -115,6 +120,15 @@ type OpenRouterResponse = {
 };
 
 export async function POST(request: Request) {
+  const supabase = await createClient();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData.user) {
+    return Response.json(
+      { error: "Du bist nicht angemeldet." },
+      { status: 401 },
+    );
+  }
+
   const openRouterApiKey = process.env.OPENROUTER_API_KEY;
   const openAIApiKey = process.env.OPENAI_API_KEY;
   if (!openRouterApiKey && !openAIApiKey) {
@@ -155,15 +169,6 @@ export async function POST(request: Request) {
     return Response.json(
       { error: "Die Handlung muss zwischen 2 und 2.000 Zeichen lang sein." },
       { status: 400 },
-    );
-  }
-
-  const supabase = await createClient();
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-  if (authError || !authData.user) {
-    return Response.json(
-      { error: "Du bist nicht angemeldet." },
-      { status: 401 },
     );
   }
 
@@ -283,10 +288,20 @@ export async function POST(request: Request) {
       modelResult.status,
       modelResult.error,
     );
+    const routingError =
+      modelResult.provider === "openrouter" &&
+      modelResult.error?.toLocaleLowerCase("en").includes("no allowed providers");
+    const tooManyModels =
+      modelResult.provider === "openrouter" &&
+      modelResult.error?.toLocaleLowerCase("en").includes("models") &&
+      modelResult.error?.toLocaleLowerCase("en").includes("3 items or fewer");
     return Response.json(
       {
-        error:
-          "Der KI-Spielleiter ist gerade nicht erreichbar. Deine Handlung wurde nicht gespeichert.",
+        error: routingError
+          ? "Das OpenRouter-Preset hat keinen erlaubten Modellanbieter. Aktiviere im Preset oder in den OpenRouter-Datenschutzeinstellungen mindestens einen Provider."
+          : tooManyModels
+            ? "Das OpenRouter-Preset enthält mehr als drei Modelle. Reduziere die Modellliste auf höchstens drei Einträge."
+            : "Der KI-Spielleiter ist gerade nicht erreichbar. Deine Handlung wurde nicht gespeichert.",
       },
       { status: 502 },
     );
@@ -360,15 +375,13 @@ async function requestOpenRouter(
       body: JSON.stringify({
         model:
           process.env.OPENROUTER_MODEL || "@preset/mythoria-dungeon-master",
-        messages: [{ role: "system", content: instructions }, ...history],
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "mythoria_adventure_turn",
-            strict: true,
-            schema: RESPONSE_SCHEMA,
+        messages: [
+          {
+            role: "system",
+            content: `${instructions}\n${OPENROUTER_JSON_INSTRUCTIONS}`,
           },
-        },
+          ...history,
+        ],
       }),
       signal: AbortSignal.timeout(45_000),
     },
@@ -524,7 +537,11 @@ export function parseAdventureResponse(
   value: string,
 ): AdventureResponse | null {
   try {
-    const parsed: unknown = JSON.parse(value);
+    const trimmed = value.trim();
+    const start = trimmed.indexOf("{");
+    const end = trimmed.lastIndexOf("}");
+    if (start < 0 || end <= start) return null;
+    const parsed: unknown = JSON.parse(trimmed.slice(start, end + 1));
     if (
       !isRecord(parsed) ||
       typeof parsed.narrative !== "string" ||

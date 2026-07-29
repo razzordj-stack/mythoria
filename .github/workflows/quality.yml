@@ -40,3 +40,9 @@ jobs:
 
       - name: Produktions-Build erstellen
         run: npm run build
+
+      - name: Chromium für E2E installieren
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser-Tests ausführen
+        run: npm run test:e2e

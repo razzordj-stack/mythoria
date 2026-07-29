@@ -17,6 +17,12 @@ export async function updateSession(request: NextRequest) {
   if (!user && path.startsWith("/dashboard")) {
     const loginUrl = request.nextUrl.clone(); loginUrl.pathname = "/login"; loginUrl.searchParams.set("next", path); return NextResponse.redirect(loginUrl);
   }
-  if (user && ["/login", "/register"].includes(path)) return NextResponse.redirect(new URL("/dashboard", request.url));
+  if (user) {
+    const { data: moderation } = await supabase.from("user_moderation").select("status").eq("user_id", user.id).maybeSingle();
+    const restricted = moderation?.status === "suspended" || moderation?.status === "banned";
+    if (restricted && path !== "/account-restricted") return NextResponse.redirect(new URL("/account-restricted", request.url));
+    if (!restricted && path === "/account-restricted") return NextResponse.redirect(new URL("/dashboard", request.url));
+    if (!restricted && ["/login", "/register"].includes(path)) return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
   return response;
 }

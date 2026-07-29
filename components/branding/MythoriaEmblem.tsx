@@ -15,11 +15,11 @@ export function MythoriaEmblem({ size = 44, className = "" }: MythoriaEmblemProp
       style={{ width: size, height: size }}
     >
       <Image
-        src="/branding/mythoria-logo.png"
+        src="/branding/mythoria-logo-new.png"
         alt="Mythoria – AI Dungeon Master"
         fill
         sizes={`${size}px`}
-        className="scale-[1.7] object-cover object-[50%_22%]"
+        className="scale-[1.8] object-cover object-[57%_48%]"
       />
     </span>
   );

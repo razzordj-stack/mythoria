@@ -21,8 +21,9 @@ export const dashboardNavigation: NavigationItem[] = [
     href: "/dashboard/achievements",
     match: "prefix",
   },
-  { label: "Freunde", icon: "♧" },
-  { label: "Gilden", icon: "♜" },
+  { label: "Gemeinschaft", icon: "♧", href: "/dashboard/social", match: "prefix" },
+  { label: "Meldungen", icon: "◇", href: "/dashboard/notifications", match: "prefix" },
+  { label: "Administration", icon: "♜", href: "/dashboard/admin", match: "prefix" },
   { label: "Profil", icon: "◉", href: "/dashboard/profile", match: "prefix" },
   {
     label: "Einstellungen",

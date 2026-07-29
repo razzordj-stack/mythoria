@@ -25,7 +25,7 @@ Das Grundraster verwendet 4, 8, 12, 16, 24, 32 und 48 px. Karten besitzen 18 px,
 
 ## Logo
 
-`components/branding/MythoriaLogo.tsx` verwendet ausschließlich `/public/branding/mythoria-logo.png` über `next/image`. Das Seitenverhältnis bleibt erhalten. Navigationen verwenden `small`, große Markenbereiche `large` oder `hero`. Das Emblem ist für kompakte mobile Flächen vorgesehen.
+`components/branding/MythoriaLogo.tsx` verwendet ausschließlich `/public/branding/mythoria-logo-new.png` über `next/image`. Das Seitenverhältnis bleibt erhalten. Navigationen verwenden `small`, große Markenbereiche `large` oder `hero`. Das Emblem ist für kompakte mobile Flächen vorgesehen.
 
 ## Komponenten
 

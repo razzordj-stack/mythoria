@@ -82,6 +82,9 @@ export default function ProfilePage() {
     const { error: profileError } = await supabase.auth.updateUser({
       data: { avatar_url: avatarUrl },
     });
+    if (!profileError) {
+      await supabase.from("public_profiles").update({ avatar_url: avatarUrl }).eq("id", user.id);
+    }
     if (profileError) setMessage(profileError.message);
     else {
       setAvatar(avatarUrl);
@@ -94,11 +97,15 @@ export default function ProfilePage() {
     e.preventDefault();
     setBusy(true);
     setSuccess(false);
-    const { error } = await supabase.auth.updateUser({
+    const { data: authData, error } = await supabase.auth.updateUser({
       data: { display_name: name.trim(), avatar_url: avatar, language },
     });
-    setMessage(error ? error.message : "Profil gespeichert.");
-    setSuccess(!error);
+    const publicError = !error && authData.user
+      ? (await supabase.from("public_profiles").update({ display_name: name.trim() || "Abenteurer", avatar_url: avatar || null }).eq("id", authData.user.id)).error
+      : null;
+    const finalError = error ?? publicError;
+    setMessage(finalError ? finalError.message : "Profil gespeichert.");
+    setSuccess(!finalError);
     setBusy(false);
   }
   const initial = (name || email || "M").slice(0, 1).toUpperCase();

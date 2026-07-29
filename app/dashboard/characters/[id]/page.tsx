@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { CharacterAvatar } from "@/app/components/character-avatar";
+import { derivedCharacterStats, levelProgress } from "@/lib/progression";
 
 type Character = {
     id: string;
@@ -211,13 +212,9 @@ export default function CharacterDetailPage() {
         classIcons[normalizedClass] ??
         raceIcons[normalizedRace] ??
         "✦";
-    const level = Math.max(character.level ?? 1, 1);
     const experience = Math.max(character.experience ?? 0, 0);
-    const nextLevelExperience = Math.max(level * 100, 100);
-    const progress = Math.min(
-        Math.round((experience / nextLevelExperience) * 100),
-        100,
-    );
+    const progression = levelProgress(experience);
+    const level = progression.level;
 
     const attributes = [
         ["Stärke", safeNumber(character.strength, 10), "💪"],
@@ -232,6 +229,14 @@ export default function CharacterDetailPage() {
     const mana = safeNumber(character.mana, 50);
     const maxMana = Math.max(safeNumber(character.max_mana, 50), 1);
     const gold = safeNumber(character.gold, 0);
+    const derivedStats = derivedCharacterStats(level, {
+        strength: safeNumber(character.strength, 10),
+        dexterity: safeNumber(character.dexterity, 10),
+        intelligence: safeNumber(character.intelligence, 10),
+        constitution: safeNumber(character.constitution, 10),
+        wisdom: safeNumber(character.wisdom, 10),
+        charisma: safeNumber(character.charisma, 10),
+    });
 
     return (
         <main className="relative min-h-screen overflow-hidden bg-[#020403] text-white">
@@ -317,20 +322,20 @@ export default function CharacterDetailPage() {
                                         <p className="mt-1 text-sm text-[var(--mythoria-text-muted)]">
                                             Noch{" "}
                                             {Math.max(
-                                                nextLevelExperience - experience,
+                                                progression.remaining,
                                                 0,
                                             ).toLocaleString("de-DE")}{" "}
                                             EP bis zur nächsten Stufe
                                         </p>
                                     </div>
                                     <span className="text-lg font-black text-white">
-                                        {progress} %
+                                        {progression.percent} %
                                     </span>
                                 </div>
                                 <div className="mt-4 h-3 overflow-hidden rounded-full bg-black/35">
                                     <div
                                         className="h-full rounded-full bg-gradient-to-r from-lime-500 via-amber-500 to-amber-400 transition-all"
-                                        style={{ width: String(progress) + "%" }}
+                                        style={{ width: String(progression.percent) + "%" }}
                                     />
                                 </div>
                             </div>
@@ -406,6 +411,16 @@ export default function CharacterDetailPage() {
                                 {gold.toLocaleString("de-DE")}
                             </strong>
                         </div>
+                        <div className="grid grid-cols-2 gap-3 pt-2 sm:grid-cols-4 lg:grid-cols-2">
+                            <InfoCard label="Angriff" value={String(derivedStats.attack)} />
+                            <InfoCard label="Verteidigung" value={String(derivedStats.defense)} />
+                            <InfoCard label="Magiekraft" value={String(derivedStats.magicPower)} />
+                            <InfoCard label="Initiative" value={String(derivedStats.initiative)} />
+                            <InfoCard label="Kritisch" value={`${derivedStats.criticalChance} %`} />
+                            <InfoCard label="Ausweichen" value={`${derivedStats.dodgeChance} %`} />
+                            <InfoCard label="Traglast" value={String(derivedStats.carryCapacity)} />
+                            <InfoCard label="Überzeugen" value={String(derivedStats.persuasion)} />
+                        </div>
                     </div>
                 </section>
             </div>
@@ -429,6 +444,31 @@ function QuickActions({ characterId }: { characterId: string }) {
             label: "Quests",
             icon: "📜",
             href: "/dashboard/characters/" + characterId + "/quests",
+        },
+        {
+            label: "Fähigkeiten",
+            icon: "✦",
+            href: "/dashboard/characters/" + characterId + "/skills",
+        },
+        {
+            label: "Kampf",
+            icon: "⚔",
+            href: "/dashboard/characters/" + characterId + "/combat",
+        },
+        {
+            label: "Marktplatz",
+            icon: "⚖",
+            href: "/dashboard/characters/" + characterId + "/market",
+        },
+        {
+            label: "Fraktionen",
+            icon: "♛",
+            href: "/dashboard/characters/" + characterId + "/reputation",
+        },
+        {
+            label: "Begleiter",
+            icon: "♙",
+            href: "/dashboard/characters/" + characterId + "/companions",
         },
         {
             label: "Abenteuer starten",

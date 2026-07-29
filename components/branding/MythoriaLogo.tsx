@@ -26,10 +26,10 @@ export function MythoriaLogo({
   return (
     <figure className={["inline-flex max-w-full flex-col items-center", className].filter(Boolean).join(" ")}>
       <Image
-        src="/branding/mythoria-logo.png"
+        src="/branding/mythoria-logo-new.png"
         alt="Mythoria – AI Dungeon Master"
         width={config.width}
-        height={config.width}
+        height={Math.round((config.width * 2) / 3)}
         sizes={config.sizes}
         preload={priority}
         className={[
