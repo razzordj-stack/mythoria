@@ -150,13 +150,14 @@ export default function CharactersPage() {
                 .eq("user_id", user.id)
                 .order("created_at", {
                     ascending: false,
-                });
+                })
+                .overrideTypes<Character[], { merge: false }>();
 
             if (error) {
                 throw new Error(error.message);
             }
 
-            setCharacters((data ?? []) as Character[]);
+            setCharacters(data ?? []);
         } catch (error) {
             setCharacters([]);
 
@@ -173,7 +174,11 @@ export default function CharactersPage() {
     }, [supabase]);
 
     useEffect(() => {
-        void loadCharacters();
+        const timeoutId = window.setTimeout(() => {
+            void loadCharacters();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
     }, [loadCharacters]);
 
     async function handleDelete(character: Character) {

@@ -1,646 +1,856 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
+import { createBrowserClient } from "@supabase/ssr";
 
-type DashboardCardProps = {
-    title: string;
-    description: string;
-    icon: string;
-    href: string;
-    buttonText: string;
-    status?: string;
-    disabled?: boolean;
+type Character = {
+    id: string;
+    user_id: string;
+    name: string;
+    race: string;
+    character_class: string;
+    background: string | null;
+    appearance: string | null;
+    level: number;
+    experience: number;
+    created_at: string | null;
+    updated_at: string | null;
 };
 
-type RoadmapStepProps = {
-    number: string;
-    title: string;
-    description: string;
-    completed?: boolean;
-    active?: boolean;
-    soon?: boolean;
+type MessageState =
+    | {
+        type: "error" | "success";
+        text: string;
+    }
+    | null;
+
+const raceLabels: Record<string, string> = {
+    human: "Mensch",
+    mensch: "Mensch",
+    elf: "Elf",
+    dwarf: "Zwerg",
+    zwerg: "Zwerg",
+    orc: "Ork",
+    ork: "Ork",
+    shadowborn: "Schattengeborener",
+    dragonkin: "Drachenblütiger",
 };
 
-const dashboardCards: DashboardCardProps[] = [
-    {
-        title: "Charaktere",
-        description:
-            "Erstelle neue Helden, verwalte ihre Herkunft, Klasse, Ausrüstung und Geschichte.",
-        icon: "🧙",
-        href: "/dashboard/characters",
-        buttonText: "Charaktere öffnen",
-        status: "Phase 2 aktiv",
-    },
-    {
-        title: "Kampagnen",
-        description:
-            "Erstelle später eigene Abenteuer oder schließe dich einer bestehenden Gruppe an.",
-        icon: "🗺️",
-        href: "/dashboard/campaigns",
-        buttonText: "Bald verfügbar",
-        status: "In Planung",
-        disabled: true,
-    },
-    {
-        title: "Multiplayer-Lobby",
-        description:
-            "Lade Freunde ein, verteile Rollen und startet gemeinsam eine Kampagne.",
-        icon: "👥",
-        href: "/dashboard/lobby",
-        buttonText: "Bald verfügbar",
-        status: "Phase 3",
-        disabled: true,
-    },
-    {
-        title: "Welten",
-        description:
-            "Entdecke später eigene Königreiche, Fraktionen, Regionen und Geschichten.",
-        icon: "🌍",
-        href: "/dashboard/worlds",
-        buttonText: "Bald verfügbar",
-        status: "Spätere Phase",
-        disabled: true,
-    },
-];
+const raceIcons: Record<string, string> = {
+    human: "🛡️",
+    mensch: "🛡️",
+    elf: "🌿",
+    dwarf: "⛏️",
+    zwerg: "⛏️",
+    orc: "⚔️",
+    ork: "⚔️",
+    shadowborn: "🌑",
+    dragonkin: "🐉",
+};
 
-const roadmapSteps: RoadmapStepProps[] = [
-    {
-        number: "01",
-        title: "Grundprojekt",
-        description:
-            "Next.js, Tailwind CSS, Vercel und die grundlegende Mythoria-Struktur.",
-        completed: true,
-    },
-    {
-        number: "02",
-        title: "Charaktersystem",
-        description:
-            "Charakterübersicht, Charaktereditor, Rassen, Klassen und Attribute.",
-        active: true,
-    },
-    {
-        number: "03",
-        title: "Multiplayer",
-        description:
-            "Lobbys, Einladungen, Gruppenverwaltung und gemeinsames Spielen.",
-        soon: true,
-    },
-    {
-        number: "04",
-        title: "Regel-Engine",
-        description:
-            "Würfelwürfe, Lebenspunkte, Initiative, Schaden und Statuswerte.",
-        soon: true,
-    },
-    {
-        number: "05",
-        title: "KI-Spielleiter",
-        description:
-            "Dynamische Geschichten, NPCs, Quests und langfristige Erinnerungen.",
-        soon: true,
-    },
-];
+const classLabels: Record<string, string> = {
+    warrior: "Krieger",
+    krieger: "Krieger",
+    mage: "Magier",
+    magier: "Magier",
+    ranger: "Waldläufer",
+    waldlaeufer: "Waldläufer",
+    rogue: "Schurke",
+    schurke: "Schurke",
+    paladin: "Paladin",
+    necromancer: "Nekromant",
+    nekromant: "Nekromant",
+};
 
-export default function DashboardPage() {
-    const characterCount = 0;
-    const activeCampaigns = 0;
-    const completedAdventures = 0;
+const classIcons: Record<string, string> = {
+    warrior: "⚔️",
+    krieger: "⚔️",
+    mage: "🔮",
+    magier: "🔮",
+    ranger: "🏹",
+    waldlaeufer: "🏹",
+    rogue: "🗡️",
+    schurke: "🗡️",
+    paladin: "☀️",
+    necromancer: "💀",
+    nekromant: "💀",
+};
+
+export default function CharactersPage() {
+    const router = useRouter();
+
+    const supabaseUrl =
+        process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+    const supabaseKey =
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    const supabase = useMemo(() => {
+        if (!supabaseUrl || !supabaseKey) {
+            return null;
+        }
+
+        return createBrowserClient(
+            supabaseUrl,
+            supabaseKey,
+        );
+    }, [supabaseKey, supabaseUrl]);
+
+    const [characters, setCharacters] = useState<
+        Character[]
+    >([]);
+
+    const [isLoading, setIsLoading] =
+        useState(true);
+
+    const [deletingId, setDeletingId] = useState<
+        string | null
+    >(null);
+
+    const [message, setMessage] =
+        useState<MessageState>(null);
+
+    const loadCharacters = useCallback(async () => {
+        setIsLoading(true);
+        setMessage(null);
+
+        if (!supabase) {
+            setCharacters([]);
+
+            setMessage({
+                type: "error",
+                text:
+                    "Die Supabase-Umgebungsvariablen fehlen. Prüfe NEXT_PUBLIC_SUPABASE_URL und den Supabase-Schlüssel.",
+            });
+
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const {
+                data: { user },
+                error: userError,
+            } = await supabase.auth.getUser();
+
+            if (userError) {
+                throw new Error(userError.message);
+            }
+
+            if (!user) {
+                setCharacters([]);
+
+                setMessage({
+                    type: "error",
+                    text:
+                        "Du bist nicht angemeldet. Melde dich erneut an, um deine Charaktere zu sehen.",
+                });
+
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from("characters")
+                .select("*")
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: false })
+                .overrideTypes<Character[], { merge: false }>();
+
+            if (error) {
+                throw error;
+            }
+
+            const characterData = parseCharacters(
+                data as unknown,
+            );
+
+            setCharacters(characterData);
+        } catch (error) {
+            setCharacters([]);
+
+            setMessage({
+                type: "error",
+                text:
+                    error instanceof Error
+                        ? error.message
+                        : "Die Charaktere konnten nicht geladen werden.",
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [supabase]);
+
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            void loadCharacters();
+        }, 0);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [loadCharacters]);
+
+    async function handleDelete(
+        character: Character,
+    ) {
+        const confirmed = window.confirm(
+            `Möchtest du "${character.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`,
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        if (!supabase) {
+            setMessage({
+                type: "error",
+                text:
+                    "Die Verbindung zu Supabase konnte nicht hergestellt werden.",
+            });
+
+            return;
+        }
+
+        setDeletingId(character.id);
+        setMessage(null);
+
+        try {
+            const {
+                data: { user },
+                error: userError,
+            } = await supabase.auth.getUser();
+
+            if (userError) {
+                throw new Error(userError.message);
+            }
+
+            if (!user) {
+                throw new Error(
+                    "Du bist nicht mehr angemeldet.",
+                );
+            }
+
+            const { error } = await supabase
+                .from("characters")
+                .delete()
+                .eq("id", character.id)
+                .eq("user_id", user.id);
+
+            if (error) {
+                throw new Error(error.message);
+            }
+
+            setCharacters((currentCharacters) =>
+                currentCharacters.filter(
+                    (currentCharacter) =>
+                        currentCharacter.id !== character.id,
+                ),
+            );
+
+            setMessage({
+                type: "success",
+                text: `${character.name} wurde gelöscht.`,
+            });
+        } catch (error) {
+            setMessage({
+                type: "error",
+                text:
+                    error instanceof Error
+                        ? error.message
+                        : "Der Charakter konnte nicht gelöscht werden.",
+            });
+        } finally {
+            setDeletingId(null);
+        }
+    }
+
+    const totalLevels = characters.reduce(
+        (sum, character) =>
+            sum + Math.max(character.level, 1),
+        0,
+    );
+
+    const totalExperience = characters.reduce(
+        (sum, character) =>
+            sum + Math.max(character.experience, 0),
+        0,
+    );
 
     return (
-        <main className="relative min-h-screen overflow-hidden bg-[#030605] text-white">
+        <main className="relative min-h-screen overflow-hidden bg-[#070713] text-white">
             <BackgroundEffects />
 
-            <DashboardHeader />
-
-            <div className="relative mx-auto max-w-7xl px-5 pb-20 pt-32 sm:px-8">
-                <WelcomeSection />
-
-                <StatisticsSection
-                    characterCount={characterCount}
-                    activeCampaigns={activeCampaigns}
-                    completedAdventures={completedAdventures}
+            <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                <PageHeader
+                    isLoading={isLoading}
+                    onRefresh={() => void loadCharacters()}
                 />
 
-                <section className="mt-14">
-                    <SectionHeading
-                        eyebrow="Dein Abenteuerzentrum"
-                        title="Was möchtest du heute erschaffen?"
-                        description="Verwalte deine Helden und bereite dich auf die kommenden Welten von Mythoria vor."
-                    />
-
-                    <div className="mt-8 grid gap-6 md:grid-cols-2">
-                        {dashboardCards.map((card) => (
-                            <DashboardCard key={card.title} {...card} />
-                        ))}
+                {message && (
+                    <div
+                        role={
+                            message.type === "error"
+                                ? "alert"
+                                : "status"
+                        }
+                        className={[
+                            "mb-6 rounded-2xl border p-4 text-sm leading-6 backdrop-blur-xl",
+                            message.type === "error"
+                                ? "border-red-400/30 bg-red-500/10 text-red-100"
+                                : "border-emerald-400/30 bg-emerald-500/10 text-emerald-100",
+                        ].join(" ")}
+                    >
+                        {message.text}
                     </div>
-                </section>
+                )}
 
-                <CharacterPreview />
+                <Statistics
+                    characterCount={characters.length}
+                    totalLevels={totalLevels}
+                    totalExperience={totalExperience}
+                />
 
-                <section className="mt-20">
-                    <SectionHeading
-                        eyebrow="Entwicklungsreise"
-                        title="Die Mythoria-Roadmap"
-                        description="Mythoria wächst Schritt für Schritt zu einer lebendigen KI-Rollenspielplattform."
-                    />
+                {isLoading ? (
+                    <LoadingState />
+                ) : characters.length === 0 ? (
+                    <EmptyState />
+                ) : (
+                    <section>
+                        <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                            <div>
+                                <p className="text-xs font-bold uppercase tracking-[0.3em] text-violet-300">
+                                    Deine Gefährten
+                                </p>
 
-                    <div className="mt-8 grid gap-4">
-                        {roadmapSteps.map((step) => (
-                            <RoadmapStep key={step.number} {...step} />
-                        ))}
-                    </div>
-                </section>
+                                <h2 className="mt-2 text-2xl font-black text-white">
+                                    Charakterübersicht
+                                </h2>
+                            </div>
 
-                <QuickStartSection />
+                            <p className="text-sm text-slate-400">
+                                {characters.length}{" "}
+                                {characters.length === 1
+                                    ? "Charakter"
+                                    : "Charaktere"}
+                            </p>
+                        </div>
+
+                        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                            {characters.map((character) => (
+                                <CharacterCard
+                                    key={character.id}
+                                    character={character}
+                                    isDeleting={
+                                        deletingId === character.id
+                                    }
+                                    onOpen={() =>
+                                        router.push(
+                                            `/dashboard/characters/${character.id}`,
+                                        )
+                                    }
+                                    onDelete={() =>
+                                        void handleDelete(character)
+                                    }
+                                />
+                            ))}
+
+                            <CreateCharacterCard />
+                        </div>
+                    </section>
+                )}
             </div>
-
-            <DashboardFooter />
         </main>
     );
 }
 
-function BackgroundEffects() {
+type PageHeaderProps = {
+    isLoading: boolean;
+    onRefresh: () => void;
+};
+
+function PageHeader({
+    isLoading,
+    onRefresh,
+}: PageHeaderProps) {
     return (
-        <div className="pointer-events-none fixed inset-0 overflow-hidden">
-            <div className="absolute left-1/2 top-[-300px] h-[750px] w-[750px] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-[170px]" />
-
-            <div className="absolute bottom-[-300px] right-[-180px] h-[600px] w-[600px] rounded-full bg-green-900/10 blur-[170px]" />
-
-            <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] [background-size:80px_80px]" />
-
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#030605_82%)]" />
-        </div>
-    );
-}
-
-function DashboardHeader() {
-    return (
-        <header className="fixed left-0 top-0 z-50 w-full border-b border-white/10 bg-black/75 backdrop-blur-2xl">
-            <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
-                <Link href="/" className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-400/30 bg-emerald-400/10 text-xl">
-                        🎲
-                    </div>
-
-                    <div>
-                        <p className="text-lg font-black tracking-[0.22em] text-emerald-400">
-                            MYTHORIA
-                        </p>
-
-                        <p className="text-[10px] uppercase tracking-[0.25em] text-gray-500">
-                            Forge your legend
-                        </p>
-                    </div>
+        <header className="mb-8 flex flex-col gap-5 rounded-3xl border border-violet-400/20 bg-white/[0.04] p-5 shadow-2xl shadow-violet-950/20 backdrop-blur-xl sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-4">
+                <Link
+                    href="/dashboard"
+                    aria-label="Zurück zum Dashboard"
+                    className="flex h-11 min-w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl transition hover:border-violet-400/40 hover:bg-violet-500/10"
+                >
+                    ←
                 </Link>
 
-                <nav className="hidden items-center gap-7 text-sm text-gray-400 md:flex">
-                    <Link
-                        href="/dashboard"
-                        className="font-bold text-emerald-400 transition hover:text-emerald-300"
-                    >
-                        Dashboard
-                    </Link>
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-violet-300">
+                        Mythoria
+                    </p>
 
-                    <Link
-                        href="/dashboard/characters"
-                        className="transition hover:text-white"
-                    >
-                        Charaktere
-                    </Link>
+                    <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
+                        Meine Charaktere
+                    </h1>
 
-                    <span className="cursor-not-allowed opacity-40">Kampagnen</span>
-                </nav>
-
-                <div className="flex items-center gap-3">
-                    <Link
-                        href="/"
-                        className="hidden rounded-xl border border-white/10 px-4 py-2 text-sm font-bold text-gray-300 transition hover:border-emerald-400/40 hover:text-white sm:block"
-                    >
-                        Startseite
-                    </Link>
-
-                    <button
-                        type="button"
-                        aria-label="Benutzermenü"
-                        className="flex h-10 w-10 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-400/10 font-black text-emerald-300"
-                    >
-                        M
-                    </button>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+                        Verwalte deine Helden, erkunde ihre
+                        Geschichten und führe sie tiefer in die
+                        Welt von Mythoria.
+                    </p>
                 </div>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                    type="button"
+                    onClick={onRefresh}
+                    disabled={isLoading}
+                    className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:border-violet-400/40 hover:bg-violet-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    {isLoading
+                        ? "Wird geladen ..."
+                        : "↻ Aktualisieren"}
+                </button>
+
+                <Link
+                    href="/dashboard/characters/new"
+                    className="rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-purple-600 px-6 py-3 text-center text-sm font-black text-white shadow-lg shadow-violet-950/50 transition hover:scale-[1.01] hover:brightness-110"
+                >
+                    + Neuer Charakter
+                </Link>
             </div>
         </header>
     );
 }
 
-function WelcomeSection() {
-    return (
-        <section className="relative overflow-hidden rounded-[2rem] border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.09] via-white/[0.025] to-transparent p-7 sm:p-10 lg:p-12">
-            <div className="absolute right-[-50px] top-[-60px] text-[220px] opacity-[0.04]">
-                🐉
-            </div>
-
-            <div className="relative max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-black/30 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                    Phase 2 gestartet
-                </div>
-
-                <h1 className="mt-6 text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
-                    Willkommen zurück in{" "}
-                    <span className="bg-gradient-to-r from-emerald-200 via-emerald-400 to-green-700 bg-clip-text text-transparent">
-                        Mythoria
-                    </span>
-                </h1>
-
-                <p className="mt-5 max-w-2xl text-lg leading-8 text-gray-300">
-                    Deine Reise beginnt mit einem Helden. Erstelle deinen ersten
-                    Charakter und lege das Fundament für eine Legende, an die sich die
-                    Welt erinnern wird.
-                </p>
-
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                    <Link
-                        href="/dashboard/characters/new"
-                        className="inline-flex items-center justify-center rounded-xl bg-emerald-400 px-7 py-4 font-black text-black transition hover:-translate-y-1 hover:bg-emerald-300"
-                    >
-                        <span className="mr-2 text-xl">+</span>
-                        Ersten Charakter erstellen
-                    </Link>
-
-                    <Link
-                        href="/dashboard/characters"
-                        className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-7 py-4 font-bold text-white transition hover:border-emerald-400/40 hover:bg-white/[0.06]"
-                    >
-                        Charakterübersicht
-                    </Link>
-                </div>
-            </div>
-        </section>
-    );
-}
-
-function StatisticsSection({
-    characterCount,
-    activeCampaigns,
-    completedAdventures,
-}: {
+type StatisticsProps = {
     characterCount: number;
-    activeCampaigns: number;
-    completedAdventures: number;
-}) {
-    const statistics = [
-        {
-            label: "Charaktere",
-            value: characterCount,
-            icon: "🧙",
-            description: "Deine erschaffenen Helden",
-        },
-        {
-            label: "Aktive Kampagnen",
-            value: activeCampaigns,
-            icon: "📜",
-            description: "Laufende Abenteuer",
-        },
-        {
-            label: "Abgeschlossene Abenteuer",
-            value: completedAdventures,
-            icon: "🏆",
-            description: "Geschriebene Legenden",
-        },
-        {
-            label: "Aktuelle Phase",
-            value: "02",
-            icon: "⚒️",
-            description: "Charaktersystem",
-        },
-    ];
+    totalLevels: number;
+    totalExperience: number;
+};
 
+function Statistics({
+    characterCount,
+    totalLevels,
+    totalExperience,
+}: StatisticsProps) {
     return (
-        <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {statistics.map((statistic) => (
-                <article
-                    key={statistic.label}
-                    className="rounded-2xl border border-white/10 bg-white/[0.025] p-5 transition hover:border-emerald-400/30"
-                >
-                    <div className="flex items-start justify-between gap-4">
-                        <div>
-                            <p className="text-sm text-gray-500">{statistic.label}</p>
+        <section className="mb-8 grid gap-4 sm:grid-cols-3">
+            <StatisticCard
+                icon="🧙"
+                label="Charaktere"
+                value={characterCount.toLocaleString(
+                    "de-DE",
+                )}
+            />
 
-                            <p className="mt-2 text-3xl font-black text-white">
-                                {statistic.value}
-                            </p>
-                        </div>
+            <StatisticCard
+                icon="⭐"
+                label="Gesamtstufen"
+                value={totalLevels.toLocaleString("de-DE")}
+            />
 
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-400/10 text-2xl">
-                            {statistic.icon}
-                        </div>
-                    </div>
-
-                    <p className="mt-4 text-sm text-gray-500">
-                        {statistic.description}
-                    </p>
-                </article>
-            ))}
+            <StatisticCard
+                icon="✨"
+                label="Erfahrung"
+                value={`${totalExperience.toLocaleString(
+                    "de-DE",
+                )} EP`}
+            />
         </section>
     );
 }
 
-function SectionHeading({
-    eyebrow,
-    title,
-    description,
-}: {
-    eyebrow: string;
-    title: string;
-    description: string;
-}) {
+type StatisticCardProps = {
+    icon: string;
+    label: string;
+    value: string;
+};
+
+function StatisticCard({
+    icon,
+    label,
+    value,
+}: StatisticCardProps) {
     return (
-        <div className="max-w-3xl">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-emerald-400">
-                {eyebrow}
-            </p>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+            <div className="flex items-center gap-4">
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-2xl">
+                    {icon}
+                </span>
 
-            <h2 className="mt-4 text-3xl font-black sm:text-4xl">{title}</h2>
+                <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        {label}
+                    </p>
 
-            <p className="mt-4 leading-7 text-gray-400">{description}</p>
+                    <p className="mt-1 text-2xl font-black text-white">
+                        {value}
+                    </p>
+                </div>
+            </div>
         </div>
     );
 }
 
-function DashboardCard({
-    title,
-    description,
-    icon,
-    href,
-    buttonText,
-    status,
-    disabled = false,
-}: DashboardCardProps) {
-    return (
-        <article
-            className={`group relative overflow-hidden rounded-3xl border p-7 transition ${disabled
-                    ? "border-white/10 bg-white/[0.015] opacity-65"
-                    : "border-white/10 bg-white/[0.03] hover:-translate-y-1 hover:border-emerald-400/40"
-                }`}
-        >
-            <div className="absolute right-[-15px] top-[-30px] text-[140px] opacity-[0.035] transition group-hover:scale-110">
-                {icon}
-            </div>
+type CharacterCardProps = {
+    character: Character;
+    isDeleting: boolean;
+    onOpen: () => void;
+    onDelete: () => void;
+};
 
-            <div className="relative">
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-400/10 text-3xl">
+function CharacterCard({
+    character,
+    isDeleting,
+    onOpen,
+    onDelete,
+}: CharacterCardProps) {
+    const normalizedRace =
+        character.race.toLowerCase();
+
+    const normalizedClass =
+        character.character_class.toLowerCase();
+
+    const raceLabel =
+        raceLabels[normalizedRace] ??
+        formatValue(character.race);
+
+    const classLabel =
+        classLabels[normalizedClass] ??
+        formatValue(character.character_class);
+
+    const icon =
+        classIcons[normalizedClass] ??
+        raceIcons[normalizedRace] ??
+        "✦";
+
+    const level = Math.max(character.level, 1);
+
+    const experience = Math.max(
+        character.experience,
+        0,
+    );
+
+    const nextLevelExperience = Math.max(
+        level * 100,
+        100,
+    );
+
+    const progress = Math.min(
+        Math.round(
+            (experience / nextLevelExperience) * 100,
+        ),
+        100,
+    );
+
+    return (
+        <article className="group overflow-hidden rounded-3xl border border-white/10 bg-[#0c0b1c]/90 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-violet-400/40 hover:shadow-violet-950/40">
+            <div className="relative flex min-h-56 items-center justify-center overflow-hidden border-b border-white/10 bg-gradient-to-br from-violet-950 via-[#17102f] to-black">
+                <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-violet-500/20 blur-3xl" />
+
+                <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-fuchsia-500/10 blur-3xl" />
+
+                <div className="relative text-center">
+                    <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border border-violet-300/30 bg-black/30 text-5xl shadow-xl shadow-violet-950/50 transition group-hover:scale-105">
                         {icon}
                     </div>
 
-                    {status && (
-                        <span
-                            className={`rounded-full border px-3 py-1 text-xs font-bold ${disabled
-                                    ? "border-white/10 text-gray-500"
-                                    : "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
-                                }`}
-                        >
-                            {status}
-                        </span>
-                    )}
+                    <span className="mt-4 inline-block rounded-full border border-white/10 bg-black/40 px-4 py-1 text-xs font-black uppercase tracking-[0.2em] text-violet-200">
+                        Stufe {level}
+                    </span>
                 </div>
+            </div>
 
-                <h3 className="mt-6 text-2xl font-black">{title}</h3>
-
-                <p className="mt-3 min-h-[84px] leading-7 text-gray-400">
-                    {description}
+            <div className="p-6">
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-violet-400">
+                    {raceLabel}
                 </p>
 
-                {disabled ? (
-                    <button
-                        type="button"
-                        disabled
-                        className="mt-7 w-full cursor-not-allowed rounded-xl border border-white/10 bg-white/[0.02] px-5 py-3 font-bold text-gray-600"
-                    >
-                        {buttonText}
-                    </button>
-                ) : (
-                    <Link
-                        href={href}
-                        className="mt-7 inline-flex w-full items-center justify-center rounded-xl bg-emerald-400 px-5 py-3 font-black text-black transition hover:bg-emerald-300"
-                    >
-                        {buttonText}
-                    </Link>
-                )}
-            </div>
-        </article>
-    );
-}
-
-function CharacterPreview() {
-    return (
-        <section className="mt-20">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-                <SectionHeading
-                    eyebrow="Deine Helden"
-                    title="Charakterübersicht"
-                    description="Sobald du einen Helden erstellst, erscheint er hier mit seiner Klasse, Rasse und Geschichte."
-                />
-
-                <Link
-                    href="/dashboard/characters"
-                    className="text-sm font-black text-emerald-400 transition hover:text-emerald-300"
-                >
-                    Alle Charaktere anzeigen →
-                </Link>
-            </div>
-
-            <div className="mt-8 flex min-h-[320px] items-center justify-center rounded-[2rem] border border-dashed border-white/15 bg-white/[0.02] px-6 py-12 text-center">
-                <div className="max-w-lg">
-                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-400/10 text-4xl">
-                        ⚔️
-                    </div>
-
-                    <h3 className="mt-6 text-2xl font-black">
-                        Noch kein Charakter vorhanden
-                    </h3>
-
-                    <p className="mt-4 leading-7 text-gray-400">
-                        Die Chronik wartet auf ihren ersten Namen. Erstelle jetzt einen
-                        Helden und entscheide, wer du in Mythoria sein möchtest.
-                    </p>
-
-                    <Link
-                        href="/dashboard/characters/new"
-                        className="mt-7 inline-flex rounded-xl bg-emerald-400 px-6 py-3 font-black text-black transition hover:-translate-y-1 hover:bg-emerald-300"
-                    >
-                        Charakter erschaffen
-                    </Link>
-                </div>
-            </div>
-        </section>
-    );
-}
-
-function RoadmapStep({
-    number,
-    title,
-    description,
-    completed = false,
-    active = false,
-    soon = false,
-}: RoadmapStepProps) {
-    let cardClasses =
-        "border-white/10 bg-white/[0.02]";
-
-    let numberClasses =
-        "border-white/10 bg-white/[0.04] text-gray-400";
-
-    let statusText = "Geplant";
-
-    if (completed) {
-        cardClasses =
-            "border-emerald-400/20 bg-emerald-400/[0.05]";
-        numberClasses =
-            "border-emerald-400/30 bg-emerald-400 text-black";
-        statusText = "Abgeschlossen";
-    }
-
-    if (active) {
-        cardClasses =
-            "border-emerald-400/40 bg-emerald-400/[0.08] shadow-[0_0_50px_rgba(52,211,153,0.06)]";
-        numberClasses =
-            "border-emerald-300 bg-emerald-400 text-black";
-        statusText = "Aktiv";
-    }
-
-    return (
-        <article
-            className={`rounded-2xl border p-5 transition sm:p-6 ${cardClasses} ${soon ? "opacity-65" : ""
-                }`}
-        >
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                <div
-                    className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border font-black ${numberClasses}`}
-                >
-                    {completed ? "✓" : number}
-                </div>
-
-                <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-3">
-                        <h3 className="text-xl font-black">{title}</h3>
-
-                        <span
-                            className={`rounded-full border px-3 py-1 text-xs font-bold ${active
-                                    ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
-                                    : completed
-                                        ? "border-emerald-400/20 text-emerald-400"
-                                        : "border-white/10 text-gray-500"
-                                }`}
-                        >
-                            {statusText}
-                        </span>
-                    </div>
-
-                    <p className="mt-2 leading-7 text-gray-400">{description}</p>
-                </div>
-
-                {active && (
-                    <Link
-                        href="/dashboard/characters"
-                        className="shrink-0 rounded-xl border border-emerald-400/30 px-5 py-3 text-center text-sm font-black text-emerald-300 transition hover:bg-emerald-400 hover:text-black"
-                    >
-                        Weiterbauen
-                    </Link>
-                )}
-            </div>
-        </article>
-    );
-}
-
-function QuickStartSection() {
-    const steps = [
-        {
-            number: "1",
-            title: "Charakter erstellen",
-            description: "Vergib einen Namen und beginne deine Geschichte.",
-        },
-        {
-            number: "2",
-            title: "Rasse und Klasse",
-            description: "Wähle Herkunft, Fähigkeiten und deinen Spielstil.",
-        },
-        {
-            number: "3",
-            title: "Attribute festlegen",
-            description: "Bestimme Stärke, Geschick, Intelligenz und weitere Werte.",
-        },
-        {
-            number: "4",
-            title: "Abenteuer beginnen",
-            description: "Bereite deinen Helden auf die erste Kampagne vor.",
-        },
-    ];
-
-    return (
-        <section className="mt-20 overflow-hidden rounded-[2rem] border border-emerald-400/20 bg-gradient-to-br from-emerald-400/[0.08] to-transparent p-7 sm:p-10">
-            <div className="text-center">
-                <p className="text-sm font-black uppercase tracking-[0.25em] text-emerald-400">
-                    Schnellstart
-                </p>
-
-                <h2 className="mt-4 text-3xl font-black sm:text-4xl">
-                    Vom leeren Blatt zur Legende
+                <h2 className="mt-2 break-words text-2xl font-black text-white">
+                    {character.name}
                 </h2>
 
-                <p className="mx-auto mt-4 max-w-2xl leading-7 text-gray-400">
-                    Der Charaktereditor führt dich Schritt für Schritt durch die
-                    Erschaffung deines Helden.
+                <p className="mt-1 text-sm font-semibold text-slate-400">
+                    {classLabel}
                 </p>
-            </div>
 
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {steps.map((step) => (
-                    <article
-                        key={step.number}
-                        className="rounded-2xl border border-white/10 bg-black/20 p-5"
+                <p className="mt-4 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-slate-400">
+                    {character.background?.trim() ||
+                        "Die Geschichte dieses Charakters wurde noch nicht niedergeschrieben."}
+                </p>
+
+                <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <div className="mb-2 flex items-center justify-between gap-4">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            Erfahrung
+                        </span>
+
+                        <span className="text-xs font-bold text-violet-300">
+                            {experience.toLocaleString("de-DE")} /{" "}
+                            {nextLevelExperience.toLocaleString(
+                                "de-DE",
+                            )}{" "}
+                            EP
+                        </span>
+                    </div>
+
+                    <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                        <div
+                            className="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-amber-400 transition-all"
+                            style={{
+                                width: `${progress}%`,
+                            }}
+                        />
+                    </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-[1fr_auto] gap-3">
+                    <button
+                        type="button"
+                        onClick={onOpen}
+                        className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 text-sm font-black text-white transition hover:brightness-110"
                     >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400 font-black text-black">
-                            {step.number}
-                        </div>
+                        Charakter öffnen
+                    </button>
 
-                        <h3 className="mt-5 font-black">{step.title}</h3>
+                    <button
+                        type="button"
+                        onClick={onDelete}
+                        disabled={isDeleting}
+                        aria-label={`${character.name} löschen`}
+                        title="Charakter löschen"
+                        className="flex min-w-12 items-center justify-center rounded-xl border border-red-400/20 bg-red-500/5 px-4 py-3 text-sm text-red-300 transition hover:border-red-400/50 hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {isDeleting ? "…" : "🗑️"}
+                    </button>
+                </div>
+            </div>
+        </article>
+    );
+}
 
-                        <p className="mt-2 text-sm leading-6 text-gray-400">
-                            {step.description}
-                        </p>
-                    </article>
-                ))}
+function CreateCharacterCard() {
+    return (
+        <Link
+            href="/dashboard/characters/new"
+            className="group flex min-h-[32rem] flex-col items-center justify-center rounded-3xl border border-dashed border-violet-400/30 bg-violet-500/[0.03] p-8 text-center transition hover:-translate-y-1 hover:border-violet-400/70 hover:bg-violet-500/[0.08]"
+        >
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border border-violet-400/30 bg-violet-500/10 text-4xl text-violet-300 transition group-hover:scale-110">
+                +
             </div>
 
-            <div className="mt-10 text-center">
-                <Link
-                    href="/dashboard/characters/new"
-                    className="inline-flex items-center justify-center rounded-xl bg-emerald-400 px-8 py-4 font-black text-black transition hover:-translate-y-1 hover:bg-emerald-300"
-                >
-                    Charaktereditor starten
-                </Link>
+            <h2 className="mt-6 text-xl font-black text-white">
+                Neue Legende beginnen
+            </h2>
+
+            <p className="mt-3 max-w-xs text-sm leading-6 text-slate-400">
+                Erschaffe einen weiteren Charakter und
+                öffne ein neues Kapitel in Mythoria.
+            </p>
+        </Link>
+    );
+}
+
+function LoadingState() {
+    return (
+        <section>
+            <div className="mb-5 h-7 w-56 animate-pulse rounded-lg bg-white/10" />
+
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {Array.from({ length: 3 }).map(
+                    (_, index) => (
+                        <div
+                            key={index}
+                            className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]"
+                        >
+                            <div className="h-56 animate-pulse bg-white/5" />
+
+                            <div className="space-y-4 p-6">
+                                <div className="h-3 w-24 animate-pulse rounded bg-white/10" />
+
+                                <div className="h-8 w-3/4 animate-pulse rounded bg-white/10" />
+
+                                <div className="h-4 w-1/2 animate-pulse rounded bg-white/10" />
+
+                                <div className="space-y-2 pt-3">
+                                    <div className="h-3 animate-pulse rounded bg-white/10" />
+                                    <div className="h-3 animate-pulse rounded bg-white/10" />
+                                    <div className="h-3 w-2/3 animate-pulse rounded bg-white/10" />
+                                </div>
+                            </div>
+                        </div>
+                    ),
+                )}
             </div>
         </section>
     );
 }
 
-function DashboardFooter() {
+function EmptyState() {
     return (
-        <footer className="relative border-t border-white/10 px-5 py-10 sm:px-8">
-            <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 text-center sm:flex-row sm:text-left">
-                <div>
-                    <p className="font-black tracking-[0.2em] text-emerald-400">
-                        MYTHORIA
-                    </p>
-
-                    <p className="mt-2 text-sm text-gray-600">
-                        Jeder Held beginnt mit einer einzigen Entscheidung.
-                    </p>
-                </div>
-
-                <p className="text-sm text-gray-600">
-                    © 2026 Mythoria · Phase 2
-                </p>
+        <section className="rounded-3xl border border-dashed border-violet-400/30 bg-white/[0.03] px-6 py-20 text-center backdrop-blur-xl">
+            <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border border-violet-400/30 bg-violet-500/10 text-5xl">
+                🧙
             </div>
-        </footer>
+
+            <p className="mt-7 text-xs font-bold uppercase tracking-[0.3em] text-violet-300">
+                Noch keine Legende
+            </p>
+
+            <h2 className="mt-3 text-2xl font-black text-white sm:text-3xl">
+                Dein Abenteuer wartet
+            </h2>
+
+            <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-slate-400">
+                Du hast noch keinen Charakter erstellt.
+                Erschaffe deinen ersten Helden und betrete
+                die Reiche von Mythoria.
+            </p>
+
+            <Link
+                href="/dashboard/characters/new"
+                className="mt-8 inline-flex rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-purple-600 px-7 py-3 text-sm font-black text-white shadow-lg shadow-violet-950/50 transition hover:scale-[1.02] hover:brightness-110"
+            >
+                Ersten Charakter erschaffen
+            </Link>
+        </section>
     );
+}
+
+function BackgroundEffects() {
+    return (
+        <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 overflow-hidden"
+        >
+            <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-violet-700/20 blur-[120px]" />
+
+            <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-fuchsia-700/10 blur-[140px]" />
+
+            <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-blue-700/10 blur-[120px]" />
+
+            <div
+                className="absolute inset-0 opacity-[0.025]"
+                style={{
+                    backgroundImage:
+                        "linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)",
+                    backgroundSize: "48px 48px",
+                }}
+            />
+        </div>
+    );
+}
+
+function parseCharacters(
+    value: unknown,
+): Character[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value
+        .filter(isRecord)
+        .map((item) => ({
+            id: readString(item.id),
+            user_id: readString(item.user_id),
+            name: readString(item.name, "Unbenannter Held"),
+            race: readString(item.race, "unknown"),
+            character_class: readString(
+                item.character_class,
+                "unknown",
+            ),
+            background: readNullableString(
+                item.background,
+            ),
+            appearance: readNullableString(
+                item.appearance,
+            ),
+            level: readNumber(item.level, 1),
+            experience: readNumber(
+                item.experience,
+                0,
+            ),
+            created_at: readNullableString(
+                item.created_at,
+            ),
+            updated_at: readNullableString(
+                item.updated_at,
+            ),
+        }))
+        .filter(
+            (character) =>
+                character.id.length > 0 &&
+                character.user_id.length > 0,
+        );
+}
+
+function isRecord(
+    value: unknown,
+): value is Record<string, unknown> {
+    return (
+        typeof value === "object" &&
+        value !== null &&
+        !Array.isArray(value)
+    );
+}
+
+function readString(
+    value: unknown,
+    fallback = "",
+): string {
+    return typeof value === "string"
+        ? value
+        : fallback;
+}
+
+function readNullableString(
+    value: unknown,
+): string | null {
+    return typeof value === "string"
+        ? value
+        : null;
+}
+
+function readNumber(
+    value: unknown,
+    fallback: number,
+): number {
+    if (
+        typeof value === "number" &&
+        Number.isFinite(value)
+    ) {
+        return value;
+    }
+
+    if (
+        typeof value === "string" &&
+        value.trim() !== ""
+    ) {
+        const parsedValue = Number(value);
+
+        if (Number.isFinite(parsedValue)) {
+            return parsedValue;
+        }
+    }
+
+    return fallback;
+}
+
+function formatValue(value: string) {
+    if (!value) {
+        return "Unbekannt";
+    }
+
+    return value
+        .replace(/[_-]/g, " ")
+        .replace(/\b\w/g, (letter) =>
+            letter.toUpperCase(),
+        );
 }
