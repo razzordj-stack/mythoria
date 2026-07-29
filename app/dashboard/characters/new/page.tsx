@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CharacterAvatar } from "@/app/components/character-avatar";
 import { useRouter } from "next/navigation";
 import {
     type FormEvent,
@@ -714,9 +715,12 @@ function CharacterPreview({
                 <div className="absolute bottom-4 right-5 h-28 w-28 rounded-full bg-fuchsia-500/10 blur-3xl" />
 
                 <div className="relative text-center">
-                    <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-violet-300/30 bg-black/30 text-6xl shadow-xl shadow-violet-950/50">
-                        {displayIcon}
-                    </div>
+                    <CharacterAvatar
+                        name={displayName}
+                        icon={displayIcon}
+                        size="xl"
+                        className="mx-auto"
+                    />
 
                     <span className="mt-5 inline-block rounded-full border border-white/10 bg-black/30 px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-violet-200">
                         Stufe 1

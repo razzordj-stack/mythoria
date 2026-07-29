@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CharacterAvatar } from "@/app/components/character-avatar";
 import { useRouter } from "next/navigation";
 import {
     useCallback,
@@ -558,9 +559,11 @@ function CharacterCard({
                 <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-fuchsia-500/10 blur-3xl" />
 
                 <div className="relative text-center">
-                    <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border border-violet-300/30 bg-black/30 text-5xl shadow-xl shadow-violet-950/50 transition group-hover:scale-105">
-                        {icon}
-                    </div>
+                    <CharacterAvatar
+                        name={character.name}
+                        icon={icon}
+                        className="mx-auto transition group-hover:scale-105"
+                    />
 
                     <span className="mt-4 inline-block rounded-full border border-white/10 bg-black/40 px-4 py-1 text-xs font-black uppercase tracking-[0.2em] text-violet-200">
                         Stufe {level}
