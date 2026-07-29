@@ -1,0 +1,3 @@
+type Props = { size?: "small" | "medium" | "large"; label?: string; className?: string };
+const sizes = { small: "h-4 w-4", medium: "h-8 w-8", large: "h-12 w-12" };
+export function MythoriaSpinner({ size = "medium", label = "Die Chroniken werden geöffnet …", className = "" }: Props) { return <span role="status" className={["inline-flex items-center gap-3", className].join(" ")}><span aria-hidden="true" className={["inline-block rotate-45 animate-spin rounded-[28%] border-2 border-[var(--mythoria-border)] border-t-[var(--mythoria-neon)] shadow-[0_0_14px_rgba(185,255,56,.25)]", sizes[size]].join(" ")} />{label && <span className="text-sm text-[var(--mythoria-text-secondary)]">{label}</span>}<span className="sr-only">Ladevorgang</span></span>; }

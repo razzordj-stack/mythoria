@@ -114,29 +114,29 @@ export function CharacterFeaturePlaceholder({
 
     if (isLoading) {
         return (
-            <main className="flex min-h-screen items-center justify-center bg-[#070713] px-4">
-                <div className="h-96 w-full max-w-3xl animate-pulse rounded-3xl bg-white/[0.05]" />
+            <main className="flex min-h-screen items-center justify-center bg-[#020403] px-4">
+                <div className="h-96 w-full max-w-3xl animate-pulse rounded-3xl bg-[var(--mythoria-surface-light)]/80" />
             </main>
         );
     }
 
     if (errorMessage || isNotFound || !character) {
         return (
-            <main className="flex min-h-screen items-center justify-center bg-[#070713] px-4 text-white">
-                <section className="max-w-xl rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center">
+            <main className="flex min-h-screen items-center justify-center bg-[#020403] px-4 text-white">
+                <section className="max-w-xl rounded-3xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90 p-8 text-center">
                     <span className="text-5xl">🔍</span>
                     <h1 className="mt-5 text-3xl font-black">
                         {isNotFound
                             ? "Charakter nicht gefunden"
                             : "Seite konnte nicht geladen werden"}
                     </h1>
-                    <p className="mt-4 leading-7 text-slate-400">
+                    <p className="mt-4 leading-7 text-[var(--mythoria-text-muted)]">
                         {errorMessage ??
                             "Dieser Charakter existiert nicht oder gehört einem anderen Benutzer."}
                     </p>
                     <Link
                         href="/dashboard/characters"
-                        className="mt-7 inline-flex rounded-xl bg-violet-600 px-6 py-3 font-bold"
+                        className="mt-7 inline-flex rounded-xl bg-green-700 px-6 py-3 font-bold"
                     >
                         Zurück zur Übersicht
                     </Link>
@@ -146,11 +146,11 @@ export function CharacterFeaturePlaceholder({
     }
 
     return (
-        <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#070713] px-4 py-10 text-white">
-            <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-violet-700/20 blur-[120px]" />
-            <div className="pointer-events-none absolute -right-40 bottom-0 h-[30rem] w-[30rem] rounded-full bg-fuchsia-700/10 blur-[140px]" />
+        <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#020403] px-4 py-10 text-white">
+            <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-green-800/20 blur-[120px]" />
+            <div className="pointer-events-none absolute -right-40 bottom-0 h-[30rem] w-[30rem] rounded-full bg-amber-800/10 blur-[140px]" />
 
-            <section className="relative w-full max-w-3xl rounded-[2rem] border border-violet-400/20 bg-white/[0.04] p-7 text-center shadow-2xl shadow-violet-950/30 backdrop-blur-xl sm:p-12">
+            <section className="relative w-full max-w-3xl rounded-[2rem] border border-lime-400/20 bg-[var(--mythoria-surface)]/90 p-7 text-center shadow-2xl shadow-green-950/30 backdrop-blur-xl sm:p-12">
                 <CharacterAvatar
                     name={character.name}
                     icon={getCharacterIcon(
@@ -161,16 +161,16 @@ export function CharacterFeaturePlaceholder({
                     className="mx-auto"
                 />
 
-                <p className="mt-7 text-xs font-black uppercase tracking-[0.3em] text-violet-300">
+                <p className="mt-7 text-xs font-black uppercase tracking-[0.3em] text-lime-200">
                     {eyebrow}
                 </p>
                 <h1 className="mt-4 text-3xl font-black sm:text-5xl">
                     {title}
                 </h1>
-                <p className="mt-3 text-lg font-bold text-fuchsia-200">
+                <p className="mt-3 text-lg font-bold text-amber-100">
                     Für {character.name}
                 </p>
-                <p className="mx-auto mt-5 max-w-xl leading-7 text-slate-400">
+                <p className="mx-auto mt-5 max-w-xl leading-7 text-[var(--mythoria-text-muted)]">
                     {description}
                 </p>
 
@@ -183,7 +183,7 @@ export function CharacterFeaturePlaceholder({
 
                 <Link
                     href={"/dashboard/characters/" + character.id}
-                    className="mt-8 inline-flex rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-7 py-3 font-black transition hover:brightness-110"
+                    className="mt-8 inline-flex rounded-xl bg-gradient-to-r from-green-700 to-amber-700 px-7 py-3 font-black transition hover:brightness-110"
                 >
                     Zurück zum Charakter
                 </Link>

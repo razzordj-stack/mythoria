@@ -284,7 +284,7 @@ export default function CharactersPage() {
     );
 
     return (
-        <main className="relative min-h-screen overflow-hidden bg-[#070713] text-white">
+        <main className="relative min-h-screen overflow-hidden bg-[#020403] text-white">
             <BackgroundEffects />
 
             <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -325,7 +325,7 @@ export default function CharactersPage() {
                     <section>
                         <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                             <div>
-                                <p className="text-xs font-bold uppercase tracking-[0.3em] text-violet-300">
+                                <p className="text-xs font-bold uppercase tracking-[0.3em] text-lime-200">
                                     Deine Gefährten
                                 </p>
 
@@ -334,7 +334,7 @@ export default function CharactersPage() {
                                 </h2>
                             </div>
 
-                            <p className="text-sm text-slate-400">
+                            <p className="text-sm text-[var(--mythoria-text-muted)]">
                                 {characters.length}{" "}
                                 {characters.length === 1
                                     ? "Charakter"
@@ -380,18 +380,18 @@ function PageHeader({
     onRefresh,
 }: PageHeaderProps) {
     return (
-        <header className="mb-8 flex flex-col gap-5 rounded-3xl border border-violet-400/20 bg-white/[0.04] p-5 shadow-2xl shadow-violet-950/20 backdrop-blur-xl sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+        <header className="mb-8 flex flex-col gap-5 rounded-3xl border border-lime-400/20 bg-[var(--mythoria-surface)]/90 p-5 shadow-2xl shadow-green-950/20 backdrop-blur-xl sm:p-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-4">
                 <Link
                     href="/dashboard"
                     aria-label="Zurück zum Dashboard"
-                    className="flex h-11 min-w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl transition hover:border-violet-400/40 hover:bg-violet-500/10"
+                    className="flex h-11 min-w-11 items-center justify-center rounded-xl border border-[var(--mythoria-border)] bg-white/5 text-xl transition hover:border-lime-400/40 hover:bg-lime-500/10"
                 >
                     ←
                 </Link>
 
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-violet-300">
+                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-lime-200">
                         Mythoria
                     </p>
 
@@ -399,7 +399,7 @@ function PageHeader({
                         Meine Charaktere
                     </h1>
 
-                    <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--mythoria-text-muted)]">
                         Verwalte deine Helden, erkunde ihre
                         Geschichten und führe sie tiefer in die
                         Welt von Mythoria.
@@ -412,7 +412,7 @@ function PageHeader({
                     type="button"
                     onClick={onRefresh}
                     disabled={isLoading}
-                    className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:border-violet-400/40 hover:bg-violet-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-xl border border-[var(--mythoria-border)] bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--mythoria-text)] transition hover:border-lime-400/40 hover:bg-lime-500/10 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     {isLoading
                         ? "Wird geladen ..."
@@ -421,7 +421,7 @@ function PageHeader({
 
                 <Link
                     href="/dashboard/characters/new"
-                    className="rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-purple-600 px-6 py-3 text-center text-sm font-black text-white shadow-lg shadow-violet-950/50 transition hover:scale-[1.01] hover:brightness-110"
+                    className="rounded-xl bg-gradient-to-r from-green-700 via-amber-700 to-green-800 px-6 py-3 text-center text-sm font-black text-white shadow-lg shadow-green-950/50 transition hover:scale-[1.01] hover:brightness-110"
                 >
                     + Neuer Charakter
                 </Link>
@@ -480,14 +480,14 @@ function StatisticCard({
     value,
 }: StatisticCardProps) {
     return (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
+        <div className="rounded-2xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90 p-5 backdrop-blur-xl">
             <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-2xl">
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-lime-400/20 bg-lime-500/10 text-2xl">
                     {icon}
                 </span>
 
                 <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <p className="text-xs font-bold uppercase tracking-wider text-[var(--mythoria-text-disabled)]">
                         {label}
                     </p>
 
@@ -552,11 +552,11 @@ function CharacterCard({
     );
 
     return (
-        <article className="group overflow-hidden rounded-3xl border border-white/10 bg-[#0c0b1c]/90 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-violet-400/40 hover:shadow-violet-950/40">
-            <div className="relative flex min-h-56 items-center justify-center overflow-hidden border-b border-white/10 bg-gradient-to-br from-violet-950 via-[#17102f] to-black">
-                <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-violet-500/20 blur-3xl" />
+        <article className="group overflow-hidden rounded-3xl border border-[var(--mythoria-border)] bg-[#0b0e08]/90 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-lime-400/40 hover:shadow-green-950/40">
+            <div className="relative flex min-h-56 items-center justify-center overflow-hidden border-b border-[var(--mythoria-border)] bg-gradient-to-br from-green-950 via-[#1a1f10] to-black">
+                <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-lime-500/20 blur-3xl" />
 
-                <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-fuchsia-500/10 blur-3xl" />
+                <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-amber-500/10 blur-3xl" />
 
                 <div className="relative text-center">
                     <CharacterAvatar
@@ -565,14 +565,14 @@ function CharacterCard({
                         className="mx-auto transition group-hover:scale-105"
                     />
 
-                    <span className="mt-4 inline-block rounded-full border border-white/10 bg-black/40 px-4 py-1 text-xs font-black uppercase tracking-[0.2em] text-violet-200">
+                    <span className="mt-4 inline-block rounded-full border border-[var(--mythoria-border)] bg-black/40 px-4 py-1 text-xs font-black uppercase tracking-[0.2em] text-lime-100">
                         Stufe {level}
                     </span>
                 </div>
             </div>
 
             <div className="p-6">
-                <p className="text-xs font-bold uppercase tracking-[0.25em] text-violet-400">
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-lime-400">
                     {raceLabel}
                 </p>
 
@@ -580,22 +580,22 @@ function CharacterCard({
                     {character.name}
                 </h2>
 
-                <p className="mt-1 text-sm font-semibold text-slate-400">
+                <p className="mt-1 text-sm font-semibold text-[var(--mythoria-text-muted)]">
                     {classLabel}
                 </p>
 
-                <p className="mt-4 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-slate-400">
+                <p className="mt-4 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-[var(--mythoria-text-muted)]">
                     {character.background?.trim() ||
                         "Die Geschichte dieses Charakters wurde noch nicht niedergeschrieben."}
                 </p>
 
-                <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+                <div className="mt-5 rounded-2xl border border-[var(--mythoria-border)] bg-black/20 p-4">
                     <div className="mb-2 flex items-center justify-between gap-4">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[var(--mythoria-text-disabled)]">
                             Erfahrung
                         </span>
 
-                        <span className="text-xs font-bold text-violet-300">
+                        <span className="text-xs font-bold text-lime-200">
                             {experience.toLocaleString("de-DE")} /{" "}
                             {nextLevelExperience.toLocaleString(
                                 "de-DE",
@@ -606,7 +606,7 @@ function CharacterCard({
 
                     <div className="h-2 overflow-hidden rounded-full bg-white/10">
                         <div
-                            className="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-amber-400 transition-all"
+                            className="h-full rounded-full bg-gradient-to-r from-lime-500 via-amber-500 to-amber-400 transition-all"
                             style={{
                                 width: `${progress}%`,
                             }}
@@ -618,7 +618,7 @@ function CharacterCard({
                     <button
                         type="button"
                         onClick={onOpen}
-                        className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 text-sm font-black text-white transition hover:brightness-110"
+                        className="rounded-xl bg-gradient-to-r from-green-700 to-amber-700 px-5 py-3 text-sm font-black text-white transition hover:brightness-110"
                     >
                         Charakter öffnen
                     </button>
@@ -643,9 +643,9 @@ function CreateCharacterCard() {
     return (
         <Link
             href="/dashboard/characters/new"
-            className="group flex min-h-[32rem] flex-col items-center justify-center rounded-3xl border border-dashed border-violet-400/30 bg-violet-500/[0.03] p-8 text-center transition hover:-translate-y-1 hover:border-violet-400/70 hover:bg-violet-500/[0.08]"
+            className="group flex min-h-[32rem] flex-col items-center justify-center rounded-3xl border border-dashed border-lime-400/30 bg-lime-500/[0.03] p-8 text-center transition hover:-translate-y-1 hover:border-lime-400/70 hover:bg-lime-500/[0.08]"
         >
-            <div className="flex h-20 w-20 items-center justify-center rounded-full border border-violet-400/30 bg-violet-500/10 text-4xl text-violet-300 transition group-hover:scale-110">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border border-lime-400/30 bg-lime-500/10 text-4xl text-lime-200 transition group-hover:scale-110">
                 +
             </div>
 
@@ -653,7 +653,7 @@ function CreateCharacterCard() {
                 Neue Legende beginnen
             </h2>
 
-            <p className="mt-3 max-w-xs text-sm leading-6 text-slate-400">
+            <p className="mt-3 max-w-xs text-sm leading-6 text-[var(--mythoria-text-muted)]">
                 Erschaffe einen weiteren Charakter und
                 öffne ein neues Kapitel in Mythoria.
             </p>
@@ -671,7 +671,7 @@ function LoadingState() {
                     (_, index) => (
                         <div
                             key={index}
-                            className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]"
+                            className="overflow-hidden rounded-3xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90"
                         >
                             <div className="h-56 animate-pulse bg-white/5" />
 
@@ -698,12 +698,12 @@ function LoadingState() {
 
 function EmptyState() {
     return (
-        <section className="rounded-3xl border border-dashed border-violet-400/30 bg-white/[0.03] px-6 py-20 text-center backdrop-blur-xl">
-            <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border border-violet-400/30 bg-violet-500/10 text-5xl">
+        <section className="rounded-3xl border border-dashed border-lime-400/30 bg-[var(--mythoria-surface)]/70 px-6 py-20 text-center backdrop-blur-xl">
+            <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border border-lime-400/30 bg-lime-500/10 text-5xl">
                 🧙
             </div>
 
-            <p className="mt-7 text-xs font-bold uppercase tracking-[0.3em] text-violet-300">
+            <p className="mt-7 text-xs font-bold uppercase tracking-[0.3em] text-lime-200">
                 Noch keine Legende
             </p>
 
@@ -711,7 +711,7 @@ function EmptyState() {
                 Dein Abenteuer wartet
             </h2>
 
-            <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-slate-400">
+            <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-[var(--mythoria-text-muted)]">
                 Du hast noch keinen Charakter erstellt.
                 Erschaffe deinen ersten Helden und betrete
                 die Reiche von Mythoria.
@@ -719,7 +719,7 @@ function EmptyState() {
 
             <Link
                 href="/dashboard/characters/new"
-                className="mt-8 inline-flex rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-purple-600 px-7 py-3 text-sm font-black text-white shadow-lg shadow-violet-950/50 transition hover:scale-[1.02] hover:brightness-110"
+                className="mt-8 inline-flex rounded-xl bg-gradient-to-r from-green-700 via-amber-700 to-green-800 px-7 py-3 text-sm font-black text-white shadow-lg shadow-green-950/50 transition hover:scale-[1.02] hover:brightness-110"
             >
                 Ersten Charakter erschaffen
             </Link>
@@ -733,9 +733,9 @@ function BackgroundEffects() {
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 overflow-hidden"
         >
-            <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-violet-700/20 blur-[120px]" />
+            <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-green-800/20 blur-[120px]" />
 
-            <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-fuchsia-700/10 blur-[140px]" />
+            <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-amber-800/10 blur-[140px]" />
 
             <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-blue-700/10 blur-[120px]" />
 

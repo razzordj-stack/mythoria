@@ -1,0 +1,4 @@
+import type { ReactNode } from "react";
+type Variant = "success" | "warning" | "error" | "info";
+const styles: Record<Variant, string> = { success: "border-[var(--mythoria-success)] text-lime-100", warning: "border-[var(--mythoria-warning)] text-amber-100", error: "border-[var(--mythoria-danger-dark)] text-red-100", info: "border-[var(--mythoria-info)] text-blue-100" };
+export function MythoriaAlert({ variant = "info", title, children, className = "" }: { variant?: Variant; title?: string; children: ReactNode; className?: string }) { return <div role={variant === "error" ? "alert" : "status"} className={["rounded-2xl border bg-[var(--mythoria-surface)] p-4", styles[variant], className].join(" ")}>{title && <p className="font-bold">{title}</p>}<div className={`${title ? "mt-1 " : ""}text-sm text-[var(--mythoria-text-secondary)]`}>{children}</div></div>; }

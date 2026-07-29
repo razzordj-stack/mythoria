@@ -296,22 +296,22 @@ export default function NewCharacterPage() {
     }
 
     return (
-        <main className="relative min-h-screen overflow-hidden bg-[#070713] text-white">
+        <main className="relative min-h-screen overflow-hidden bg-[#020403] text-white">
             <BackgroundEffects />
 
             <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                <header className="mb-8 flex flex-col gap-4 rounded-3xl border border-violet-400/20 bg-white/[0.04] p-5 shadow-2xl shadow-violet-950/20 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
+                <header className="mb-8 flex flex-col gap-4 rounded-3xl border border-lime-400/20 bg-[var(--mythoria-surface)]/90 p-5 shadow-2xl shadow-green-950/20 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
                         <Link
                             href="/dashboard/characters"
-                            className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl transition hover:border-violet-400/40 hover:bg-violet-500/10"
+                            className="flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--mythoria-border)] bg-white/5 text-xl transition hover:border-lime-400/40 hover:bg-lime-500/10"
                             aria-label="Zurück zur Charakterübersicht"
                         >
                             ←
                         </Link>
 
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-violet-300">
+                            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-lime-200">
                                 Mythoria
                             </p>
 
@@ -323,32 +323,32 @@ export default function NewCharacterPage() {
 
                     <Link
                         href="/dashboard"
-                        className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-center text-sm font-semibold text-slate-200 transition hover:border-violet-400/40 hover:bg-violet-500/10 hover:text-white"
+                        className="rounded-xl border border-[var(--mythoria-border)] bg-white/5 px-5 py-3 text-center text-sm font-semibold text-[var(--mythoria-text)] transition hover:border-lime-400/40 hover:bg-lime-500/10 hover:text-white"
                     >
                         Zum Dashboard
                     </Link>
                 </header>
 
-                <div className="mb-8 rounded-2xl border border-white/10 bg-black/20 p-5 backdrop-blur-xl">
+                <div className="mb-8 rounded-2xl border border-[var(--mythoria-border)] bg-black/20 p-5 backdrop-blur-xl">
                     <div className="mb-3 flex items-center justify-between gap-4">
                         <div>
                             <p className="text-sm font-semibold text-white">
                                 Erschaffungsfortschritt
                             </p>
 
-                            <p className="mt-1 text-xs text-slate-400">
+                            <p className="mt-1 text-xs text-[var(--mythoria-text-muted)]">
                                 Name, Volk und Klasse sind Pflichtfelder.
                             </p>
                         </div>
 
-                        <span className="text-lg font-black text-violet-300">
+                        <span className="text-lg font-black text-lime-200">
                             {progress} %
                         </span>
                     </div>
 
                     <div className="h-2 overflow-hidden rounded-full bg-white/10">
                         <div
-                            className="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-amber-400 transition-all duration-500"
+                            className="h-full rounded-full bg-gradient-to-r from-lime-500 via-amber-500 to-amber-400 transition-all duration-500"
                             style={{ width: `${progress}%` }}
                         />
                     </div>
@@ -388,7 +388,7 @@ export default function NewCharacterPage() {
                             description="Gib deiner Legende einen Namen."
                         >
                             <label className="block">
-                                <span className="mb-2 block text-sm font-semibold text-slate-200">
+                                <span className="mb-2 block text-sm font-semibold text-[var(--mythoria-text)]">
                                     Charaktername
                                 </span>
 
@@ -411,7 +411,7 @@ export default function NewCharacterPage() {
                                         "w-full rounded-2xl border bg-black/30 px-4 py-4 text-white outline-none transition placeholder:text-slate-600",
                                         errors.name
                                             ? "border-red-400/60 focus:border-red-300"
-                                            : "border-white/10 focus:border-violet-400/70",
+                                            : "border-[var(--mythoria-border)] focus:border-lime-400/70",
                                     ].join(" ")}
                                 />
 
@@ -420,7 +420,7 @@ export default function NewCharacterPage() {
                                         {errors.name ?? ""}
                                     </span>
 
-                                    <span className="text-xs text-slate-500">
+                                    <span className="text-xs text-[var(--mythoria-text-disabled)]">
                                         {name.length}/40
                                     </span>
                                 </div>
@@ -515,10 +515,10 @@ export default function NewCharacterPage() {
                                     placeholder="Erzähle von Herkunft, Verlusten, Zielen, Verbündeten oder einem dunklen Geheimnis ..."
                                     rows={7}
                                     maxLength={1500}
-                                    className="w-full resize-y rounded-2xl border border-white/10 bg-black/30 px-4 py-4 leading-7 text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/70"
+                                    className="w-full resize-y rounded-2xl border border-[var(--mythoria-border)] bg-black/30 px-4 py-4 leading-7 text-white outline-none transition placeholder:text-slate-600 focus:border-lime-400/70"
                                 />
 
-                                <div className="mt-2 flex items-center justify-between gap-4 text-xs text-slate-500">
+                                <div className="mt-2 flex items-center justify-between gap-4 text-xs text-[var(--mythoria-text-disabled)]">
                                     <span>
                                         Empfehlung: mindestens 20 Zeichen
                                     </span>
@@ -546,10 +546,10 @@ export default function NewCharacterPage() {
                                     placeholder="Zum Beispiel: silbernes Haar, eine Narbe über dem linken Auge und eine schwarze Rüstung ..."
                                     rows={5}
                                     maxLength={1000}
-                                    className="w-full resize-y rounded-2xl border border-white/10 bg-black/30 px-4 py-4 leading-7 text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/70"
+                                    className="w-full resize-y rounded-2xl border border-[var(--mythoria-border)] bg-black/30 px-4 py-4 leading-7 text-white outline-none transition placeholder:text-slate-600 focus:border-lime-400/70"
                                 />
 
-                                <div className="mt-2 flex items-center justify-between gap-4 text-xs text-slate-500">
+                                <div className="mt-2 flex items-center justify-between gap-4 text-xs text-[var(--mythoria-text-disabled)]">
                                     <span>
                                         Diese Beschreibung erscheint im Charakterprofil.
                                     </span>
@@ -559,10 +559,10 @@ export default function NewCharacterPage() {
                             </label>
                         </FormSection>
 
-                        <div className="flex flex-col-reverse gap-4 rounded-3xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col-reverse gap-4 rounded-3xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
                             <Link
                                 href="/dashboard/characters"
-                                className="rounded-xl border border-white/10 px-6 py-3 text-center text-sm font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white"
+                                className="rounded-xl border border-[var(--mythoria-border)] px-6 py-3 text-center text-sm font-semibold text-[var(--mythoria-text-secondary)] transition hover:bg-white/5 hover:text-white"
                             >
                                 Abbrechen
                             </Link>
@@ -570,7 +570,7 @@ export default function NewCharacterPage() {
                             <button
                                 type="submit"
                                 disabled={isSaving}
-                                className="rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-purple-600 px-7 py-3 text-sm font-black text-white shadow-lg shadow-violet-950/50 transition hover:scale-[1.01] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-xl bg-gradient-to-r from-green-700 via-amber-700 to-green-800 px-7 py-3 text-sm font-black text-white shadow-lg shadow-green-950/50 transition hover:scale-[1.01] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {isSaving
                                     ? "Charakter wird erschaffen ..."
@@ -608,9 +608,9 @@ function FormSection({
     children,
 }: FormSectionProps) {
     return (
-        <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-black/20 backdrop-blur-xl sm:p-7">
+        <section className="rounded-3xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90 p-5 shadow-xl shadow-black/20 backdrop-blur-xl sm:p-7">
             <div className="mb-6 flex items-start gap-4">
-                <span className="flex h-11 min-w-11 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-sm font-black text-violet-300">
+                <span className="flex h-11 min-w-11 items-center justify-center rounded-xl border border-lime-400/20 bg-lime-500/10 text-sm font-black text-lime-200">
                     {number}
                 </span>
 
@@ -619,7 +619,7 @@ function FormSection({
                         {title}
                     </h2>
 
-                    <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">
+                    <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--mythoria-text-muted)]">
                         {description}
                     </p>
                 </div>
@@ -655,12 +655,12 @@ function SelectionCard({
             className={[
                 "group relative overflow-hidden rounded-2xl border p-5 text-left transition",
                 selected
-                    ? "border-violet-400/70 bg-violet-500/15 shadow-lg shadow-violet-950/30"
-                    : "border-white/10 bg-black/20 hover:border-violet-400/40 hover:bg-violet-500/5",
+                    ? "border-lime-400/70 bg-lime-500/15 shadow-lg shadow-green-950/30"
+                    : "border-[var(--mythoria-border)] bg-black/20 hover:border-lime-400/40 hover:bg-lime-500/5",
             ].join(" ")}
         >
             <div className="flex items-start gap-4">
-                <span className="flex h-12 min-w-12 items-center justify-center rounded-xl border border-white/10 bg-black/30 text-2xl">
+                <span className="flex h-12 min-w-12 items-center justify-center rounded-xl border border-[var(--mythoria-border)] bg-black/30 text-2xl">
                     {icon}
                 </span>
 
@@ -671,17 +671,17 @@ function SelectionCard({
                         </h3>
 
                         {selected && (
-                            <span className="rounded-full bg-violet-400 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-violet-950">
+                            <span className="rounded-full bg-lime-400 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-green-950">
                                 Gewählt
                             </span>
                         )}
                     </div>
 
-                    <p className="mt-2 text-sm leading-6 text-slate-400">
+                    <p className="mt-2 text-sm leading-6 text-[var(--mythoria-text-muted)]">
                         {description}
                     </p>
 
-                    <p className="mt-3 text-xs font-bold uppercase tracking-wider text-violet-300">
+                    <p className="mt-3 text-xs font-bold uppercase tracking-wider text-lime-200">
                         {detail}
                     </p>
                 </div>
@@ -709,10 +709,10 @@ function CharacterPreview({
     const displayIcon = characterClass?.icon ?? race?.icon ?? "✦";
 
     return (
-        <div className="overflow-hidden rounded-3xl border border-violet-400/20 bg-[#0c0b1c]/90 shadow-2xl shadow-violet-950/40 backdrop-blur-xl">
-            <div className="relative flex min-h-64 items-center justify-center overflow-hidden border-b border-white/10 bg-gradient-to-br from-violet-950 via-[#17102f] to-black">
-                <div className="absolute left-8 top-8 h-24 w-24 rounded-full bg-violet-500/20 blur-3xl" />
-                <div className="absolute bottom-4 right-5 h-28 w-28 rounded-full bg-fuchsia-500/10 blur-3xl" />
+        <div className="overflow-hidden rounded-3xl border border-lime-400/20 bg-[#0b0e08]/90 shadow-2xl shadow-green-950/40 backdrop-blur-xl">
+            <div className="relative flex min-h-64 items-center justify-center overflow-hidden border-b border-[var(--mythoria-border)] bg-gradient-to-br from-green-950 via-[#1a1f10] to-black">
+                <div className="absolute left-8 top-8 h-24 w-24 rounded-full bg-lime-500/20 blur-3xl" />
+                <div className="absolute bottom-4 right-5 h-28 w-28 rounded-full bg-amber-500/10 blur-3xl" />
 
                 <div className="relative text-center">
                     <CharacterAvatar
@@ -722,14 +722,14 @@ function CharacterPreview({
                         className="mx-auto"
                     />
 
-                    <span className="mt-5 inline-block rounded-full border border-white/10 bg-black/30 px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-violet-200">
+                    <span className="mt-5 inline-block rounded-full border border-[var(--mythoria-border)] bg-black/30 px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-lime-100">
                         Stufe 1
                     </span>
                 </div>
             </div>
 
             <div className="p-6">
-                <p className="text-xs font-bold uppercase tracking-[0.3em] text-violet-400">
+                <p className="text-xs font-bold uppercase tracking-[0.3em] text-lime-400">
                     Charaktervorschau
                 </p>
 
@@ -737,9 +737,9 @@ function CharacterPreview({
                     {displayName}
                 </h2>
 
-                <p className="mt-2 text-sm text-slate-400">
+                <p className="mt-2 text-sm text-[var(--mythoria-text-muted)]">
                     {race?.name ?? "Volk unbekannt"}
-                    <span className="mx-2 text-violet-500">•</span>
+                    <span className="mx-2 text-lime-500">•</span>
                     {characterClass?.name ?? "Klasse unbekannt"}
                 </p>
 
@@ -765,7 +765,7 @@ function CharacterPreview({
                     />
                 </div>
 
-                <div className="mt-6 space-y-5 border-t border-white/10 pt-5">
+                <div className="mt-6 space-y-5 border-t border-[var(--mythoria-border)] pt-5">
                     <PreviewText
                         title="Vergangenheit"
                         value={
@@ -788,7 +788,7 @@ function CharacterPreview({
                         Beginn der Legende
                     </p>
 
-                    <p className="mt-2 text-sm leading-6 text-slate-400">
+                    <p className="mt-2 text-sm leading-6 text-[var(--mythoria-text-muted)]">
                         Nach dem Erstellen beginnt dein Charakter auf Stufe 1 mit
                         0 Erfahrungspunkten.
                     </p>
@@ -808,12 +808,12 @@ function PreviewStat({
     value,
 }: PreviewStatProps) {
     return (
-        <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+        <div className="rounded-xl border border-[var(--mythoria-border)] bg-black/20 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--mythoria-text-disabled)]">
                 {label}
             </p>
 
-            <p className="mt-1 truncate text-sm font-bold text-slate-200">
+            <p className="mt-1 truncate text-sm font-bold text-[var(--mythoria-text)]">
                 {value}
             </p>
         </div>
@@ -831,11 +831,11 @@ function PreviewText({
 }: PreviewTextProps) {
     return (
         <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-violet-300">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-lime-200">
                 {title}
             </h3>
 
-            <p className="mt-2 line-clamp-5 whitespace-pre-wrap text-sm leading-6 text-slate-400">
+            <p className="mt-2 line-clamp-5 whitespace-pre-wrap text-sm leading-6 text-[var(--mythoria-text-muted)]">
                 {value}
             </p>
         </div>
@@ -848,8 +848,8 @@ function BackgroundEffects() {
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 overflow-hidden"
         >
-            <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-violet-700/20 blur-[120px]" />
-            <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-fuchsia-700/10 blur-[140px]" />
+            <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-green-800/20 blur-[120px]" />
+            <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-amber-800/10 blur-[140px]" />
             <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-blue-700/10 blur-[120px]" />
 
             <div

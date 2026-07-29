@@ -226,10 +226,10 @@ export default function EditCharacterPage() {
 
     if (isLoading) {
         return (
-            <main className="min-h-screen bg-[#070713] px-4 py-10">
+            <main className="min-h-screen bg-[#020403] px-4 py-10">
                 <div className="mx-auto max-w-5xl animate-pulse">
-                    <div className="h-28 rounded-3xl bg-white/[0.06]" />
-                    <div className="mt-8 h-[42rem] rounded-3xl bg-white/[0.05]" />
+                    <div className="h-28 rounded-3xl bg-[var(--mythoria-surface-light)]/90" />
+                    <div className="mt-8 h-[42rem] rounded-3xl bg-[var(--mythoria-surface-light)]/80" />
                 </div>
             </main>
         );
@@ -245,13 +245,13 @@ export default function EditCharacterPage() {
     }
 
     return (
-        <main className="relative min-h-screen overflow-hidden bg-[#070713] text-white">
+        <main className="relative min-h-screen overflow-hidden bg-[#020403] text-white">
             <BackgroundEffects />
 
             <div className="relative z-10 mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
-                <header className="mb-8 flex flex-col gap-4 rounded-3xl border border-violet-400/20 bg-white/[0.04] p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
+                <header className="mb-8 flex flex-col gap-4 rounded-3xl border border-lime-400/20 bg-[var(--mythoria-surface)]/90 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-violet-300">
+                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-lime-200">
                             Charaktereditor
                         </p>
                         <h1 className="mt-2 text-2xl font-black sm:text-3xl">
@@ -260,7 +260,7 @@ export default function EditCharacterPage() {
                     </div>
                     <Link
                         href={"/dashboard/characters/" + id}
-                        className="rounded-xl border border-white/10 px-5 py-3 text-center text-sm font-bold text-slate-300 transition hover:border-violet-400/40 hover:bg-white/5"
+                        className="rounded-xl border border-[var(--mythoria-border)] px-5 py-3 text-center text-sm font-bold text-[var(--mythoria-text-secondary)] transition hover:border-lime-400/40 hover:bg-white/5"
                     >
                         Abbrechen
                     </Link>
@@ -276,7 +276,7 @@ export default function EditCharacterPage() {
                         </div>
                     )}
 
-                    <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl sm:p-7">
+                    <section className="rounded-3xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90 p-5 backdrop-blur-xl sm:p-7">
                         <SectionTitle
                             number="01"
                             title="Identität"
@@ -336,7 +336,7 @@ export default function EditCharacterPage() {
                         </div>
                     </section>
 
-                    <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl sm:p-7">
+                    <section className="rounded-3xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90 p-5 backdrop-blur-xl sm:p-7">
                         <SectionTitle
                             number="02"
                             title="Chronik"
@@ -385,17 +385,17 @@ export default function EditCharacterPage() {
                         </div>
                     </section>
 
-                    <div className="flex flex-col-reverse gap-3 rounded-3xl border border-white/10 bg-black/20 p-5 sm:flex-row sm:justify-end">
+                    <div className="flex flex-col-reverse gap-3 rounded-3xl border border-[var(--mythoria-border)] bg-black/20 p-5 sm:flex-row sm:justify-end">
                         <Link
                             href={"/dashboard/characters/" + id}
-                            className="rounded-xl border border-white/10 px-6 py-3 text-center font-bold text-slate-300 transition hover:bg-white/5"
+                            className="rounded-xl border border-[var(--mythoria-border)] px-6 py-3 text-center font-bold text-[var(--mythoria-text-secondary)] transition hover:bg-white/5"
                         >
                             Abbrechen
                         </Link>
                         <button
                             type="submit"
                             disabled={isSaving}
-                            className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-7 py-3 font-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="rounded-xl bg-gradient-to-r from-green-700 to-amber-700 px-7 py-3 font-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {isSaving
                                 ? "Änderungen werden gespeichert ..."
@@ -419,12 +419,12 @@ function SectionTitle({
 }) {
     return (
         <div className="mb-6 flex gap-4">
-            <span className="flex h-11 min-w-11 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-sm font-black text-violet-300">
+            <span className="flex h-11 min-w-11 items-center justify-center rounded-xl border border-lime-400/20 bg-lime-500/10 text-sm font-black text-lime-200">
                 {number}
             </span>
             <div>
                 <h2 className="text-xl font-black">{title}</h2>
-                <p className="mt-1 text-sm leading-6 text-slate-400">
+                <p className="mt-1 text-sm leading-6 text-[var(--mythoria-text-muted)]">
                     {description}
                 </p>
             </div>
@@ -445,7 +445,7 @@ function Field({
 }) {
     return (
         <label className={className}>
-            <span className="mb-2 block text-sm font-bold text-slate-200">
+            <span className="mb-2 block text-sm font-bold text-[var(--mythoria-text)]">
                 {label}
             </span>
             {children}
@@ -468,8 +468,8 @@ function ReadOnlyStat({
     suffix?: string;
 }) {
     return (
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+        <div className="rounded-2xl border border-[var(--mythoria-border)] bg-black/20 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-[var(--mythoria-text-disabled)]">
                 {label}
             </p>
             <p className="mt-2 text-2xl font-black text-amber-200">
@@ -488,16 +488,16 @@ function StateMessage({
     description: string;
 }) {
     return (
-        <main className="flex min-h-screen items-center justify-center bg-[#070713] px-4 text-white">
-            <section className="max-w-xl rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center">
+        <main className="flex min-h-screen items-center justify-center bg-[#020403] px-4 text-white">
+            <section className="max-w-xl rounded-3xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90 p-8 text-center">
                 <span className="text-5xl">🔍</span>
                 <h1 className="mt-5 text-3xl font-black">{title}</h1>
-                <p className="mt-4 leading-7 text-slate-400">
+                <p className="mt-4 leading-7 text-[var(--mythoria-text-muted)]">
                     {description}
                 </p>
                 <Link
                     href="/dashboard/characters"
-                    className="mt-7 inline-flex rounded-xl bg-violet-600 px-6 py-3 font-bold"
+                    className="mt-7 inline-flex rounded-xl bg-green-700 px-6 py-3 font-bold"
                 >
                     Zurück zur Übersicht
                 </Link>
@@ -511,7 +511,7 @@ function inputClasses(hasError: boolean) {
         "w-full rounded-2xl border bg-black/30 px-4 py-3.5 text-white outline-none transition",
         hasError
             ? "border-red-400/60 focus:border-red-300"
-            : "border-white/10 focus:border-violet-400/70",
+            : "border-[var(--mythoria-border)] focus:border-lime-400/70",
     ].join(" ");
 }
 
@@ -521,8 +521,8 @@ function BackgroundEffects() {
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 overflow-hidden"
         >
-            <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-violet-700/20 blur-[120px]" />
-            <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-fuchsia-700/10 blur-[140px]" />
+            <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-green-800/20 blur-[120px]" />
+            <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-amber-800/10 blur-[140px]" />
         </div>
     );
 }

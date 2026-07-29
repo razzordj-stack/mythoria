@@ -234,13 +234,13 @@ export default function CharacterDetailPage() {
     const gold = safeNumber(character.gold, 0);
 
     return (
-        <main className="relative min-h-screen overflow-hidden bg-[#070713] text-white">
+        <main className="relative min-h-screen overflow-hidden bg-[#020403] text-white">
             <BackgroundEffects />
 
             <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-                <header className="mb-8 flex flex-col gap-4 rounded-3xl border border-violet-400/20 bg-white/[0.04] p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
+                <header className="mb-8 flex flex-col gap-4 rounded-3xl border border-lime-400/20 bg-[var(--mythoria-surface)]/90 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-violet-300">
+                        <p className="text-xs font-bold uppercase tracking-[0.3em] text-lime-200">
                             Charakterprofil
                         </p>
                         <h1 className="mt-2 text-2xl font-black sm:text-3xl">
@@ -251,19 +251,19 @@ export default function CharacterDetailPage() {
                     <div className="flex flex-col gap-3 sm:flex-row">
                         <Link
                             href="/dashboard/characters"
-                            className="rounded-xl border border-white/10 px-5 py-3 text-center text-sm font-bold text-slate-300 transition hover:border-violet-400/40 hover:bg-white/5 hover:text-white"
+                            className="rounded-xl border border-[var(--mythoria-border)] px-5 py-3 text-center text-sm font-bold text-[var(--mythoria-text-secondary)] transition hover:border-lime-400/40 hover:bg-white/5 hover:text-white"
                         >
                             Zurück zur Übersicht
                         </Link>
                         <Link
                             href={"/dashboard/characters/" + character.id + "/inventory"}
-                            className="rounded-xl border border-violet-400/30 bg-violet-500/10 px-5 py-3 text-center text-sm font-black text-violet-200 transition hover:bg-violet-500/20"
+                            className="rounded-xl border border-lime-400/30 bg-lime-500/10 px-5 py-3 text-center text-sm font-black text-lime-100 transition hover:bg-lime-500/20"
                         >
                             Inventar öffnen
                         </Link>
                         <Link
                             href={"/dashboard/characters/" + character.id + "/edit"}
-                            className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 text-center text-sm font-black transition hover:brightness-110"
+                            className="rounded-xl bg-gradient-to-r from-green-700 to-amber-700 px-5 py-3 text-center text-sm font-black transition hover:brightness-110"
                         >
                             Charakter bearbeiten
                         </Link>
@@ -272,10 +272,10 @@ export default function CharacterDetailPage() {
 
                 <QuickActions characterId={character.id} />
 
-                <section className="overflow-hidden rounded-3xl border border-white/10 bg-[#0c0b1c]/90 shadow-2xl shadow-violet-950/30">
-                    <div className="relative flex min-h-72 items-center justify-center overflow-hidden border-b border-white/10 bg-gradient-to-br from-violet-950 via-[#17102f] to-black px-6 py-10">
-                        <div className="absolute -left-16 -top-16 h-64 w-64 rounded-full bg-violet-500/20 blur-[90px]" />
-                        <div className="absolute -bottom-20 -right-16 h-72 w-72 rounded-full bg-fuchsia-500/15 blur-[100px]" />
+                <section className="overflow-hidden rounded-3xl border border-[var(--mythoria-border)] bg-[#0b0e08]/90 shadow-2xl shadow-green-950/30">
+                    <div className="relative flex min-h-72 items-center justify-center overflow-hidden border-b border-[var(--mythoria-border)] bg-gradient-to-br from-green-950 via-[#1a1f10] to-black px-6 py-10">
+                        <div className="absolute -left-16 -top-16 h-64 w-64 rounded-full bg-lime-500/20 blur-[90px]" />
+                        <div className="absolute -bottom-20 -right-16 h-72 w-72 rounded-full bg-amber-500/15 blur-[100px]" />
 
                         <div className="relative text-center">
                             <CharacterAvatar
@@ -284,7 +284,7 @@ export default function CharacterDetailPage() {
                                 size="xl"
                                 className="mx-auto"
                             />
-                            <p className="mt-5 text-xs font-bold uppercase tracking-[0.28em] text-violet-300">
+                            <p className="mt-5 text-xs font-bold uppercase tracking-[0.28em] text-lime-200">
                                 {raceLabel} · {classLabel}
                             </p>
                             <h2 className="mt-3 text-4xl font-black sm:text-5xl">
@@ -308,13 +308,13 @@ export default function CharacterDetailPage() {
                                 />
                             </div>
 
-                            <div className="rounded-2xl border border-violet-400/20 bg-violet-500/[0.06] p-5">
+                            <div className="rounded-2xl border border-lime-400/20 bg-lime-500/[0.06] p-5">
                                 <div className="flex items-center justify-between gap-4">
                                     <div>
-                                        <p className="text-xs font-bold uppercase tracking-wider text-violet-300">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-lime-200">
                                             Stufenfortschritt
                                         </p>
-                                        <p className="mt-1 text-sm text-slate-400">
+                                        <p className="mt-1 text-sm text-[var(--mythoria-text-muted)]">
                                             Noch{" "}
                                             {Math.max(
                                                 nextLevelExperience - experience,
@@ -329,7 +329,7 @@ export default function CharacterDetailPage() {
                                 </div>
                                 <div className="mt-4 h-3 overflow-hidden rounded-full bg-black/35">
                                     <div
-                                        className="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-amber-400 transition-all"
+                                        className="h-full rounded-full bg-gradient-to-r from-lime-500 via-amber-500 to-amber-400 transition-all"
                                         style={{ width: String(progress) + "%" }}
                                     />
                                 </div>
@@ -356,9 +356,9 @@ export default function CharacterDetailPage() {
                 </section>
 
                 <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_1fr]">
-                    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl sm:p-7">
+                    <div className="rounded-3xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90 p-5 backdrop-blur-xl sm:p-7">
                         <div className="mb-5">
-                            <p className="text-xs font-bold uppercase tracking-[0.25em] text-violet-300">
+                            <p className="text-xs font-bold uppercase tracking-[0.25em] text-lime-200">
                                 Charakterwerte
                             </p>
                             <h2 className="mt-2 text-2xl font-black">
@@ -377,9 +377,9 @@ export default function CharacterDetailPage() {
                         </div>
                     </div>
 
-                    <div className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl sm:p-7">
+                    <div className="space-y-4 rounded-3xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90 p-5 backdrop-blur-xl sm:p-7">
                         <div className="mb-5">
-                            <p className="text-xs font-bold uppercase tracking-[0.25em] text-fuchsia-300">
+                            <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-200">
                                 Ressourcen
                             </p>
                             <h2 className="mt-2 text-2xl font-black">
@@ -446,7 +446,7 @@ function QuickActions({ characterId }: { characterId: string }) {
                 <Link
                     key={action.label}
                     href={action.href}
-                    className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 font-bold text-slate-200 transition hover:-translate-y-0.5 hover:border-violet-400/40 hover:bg-violet-500/10"
+                    className="group flex items-center gap-3 rounded-2xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90 p-4 font-bold text-[var(--mythoria-text)] transition hover:-translate-y-0.5 hover:border-lime-400/40 hover:bg-lime-500/10"
                 >
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/25 text-xl transition group-hover:scale-105">
                         {action.icon}
@@ -459,8 +459,8 @@ function QuickActions({ characterId }: { characterId: string }) {
 }
 function InfoCard({ label, value }: { label: string; value: string }) {
     return (
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+        <div className="rounded-2xl border border-[var(--mythoria-border)] bg-black/20 p-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--mythoria-text-disabled)]">
                 {label}
             </p>
             <p className="mt-2 break-words font-black text-slate-100">
@@ -472,11 +472,11 @@ function InfoCard({ label, value }: { label: string; value: string }) {
 
 function StoryCard({ title, text }: { title: string; text: string }) {
     return (
-        <article className="rounded-2xl border border-white/10 bg-black/20 p-5">
-            <h3 className="text-sm font-black uppercase tracking-[0.18em] text-violet-300">
+        <article className="rounded-2xl border border-[var(--mythoria-border)] bg-black/20 p-5">
+            <h3 className="text-sm font-black uppercase tracking-[0.18em] text-lime-200">
                 {title}
             </h3>
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-400">
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--mythoria-text-muted)]">
                 {text}
             </p>
         </article>
@@ -493,9 +493,9 @@ function AttributeCard({
     icon: string;
 }) {
     return (
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
+        <div className="rounded-2xl border border-[var(--mythoria-border)] bg-black/20 p-4 text-center">
             <span className="text-2xl">{icon}</span>
-            <p className="mt-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+            <p className="mt-2 text-xs font-bold uppercase tracking-wider text-[var(--mythoria-text-disabled)]">
                 {label}
             </p>
             <p className="mt-1 text-2xl font-black text-white">{value}</p>
@@ -518,9 +518,9 @@ function ResourceBar({
     const percentage = Math.round((normalizedValue / maximum) * 100);
 
     return (
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+        <div className="rounded-2xl border border-[var(--mythoria-border)] bg-black/20 p-4">
             <div className="flex items-center justify-between gap-4">
-                <span className="text-sm font-bold text-slate-200">
+                <span className="text-sm font-bold text-[var(--mythoria-text)]">
                     {label}
                 </span>
                 <span className="text-sm font-black text-white">
@@ -539,10 +539,10 @@ function ResourceBar({
 }
 function LoadingState() {
     return (
-        <main className="min-h-screen bg-[#070713] px-4 py-10 text-white">
+        <main className="min-h-screen bg-[#020403] px-4 py-10 text-white">
             <div className="mx-auto max-w-6xl animate-pulse">
-                <div className="h-28 rounded-3xl bg-white/[0.06]" />
-                <div className="mt-8 h-[36rem] rounded-3xl bg-white/[0.05]" />
+                <div className="h-28 rounded-3xl bg-[var(--mythoria-surface-light)]/90" />
+                <div className="mt-8 h-[36rem] rounded-3xl bg-[var(--mythoria-surface-light)]/80" />
             </div>
         </main>
     );
@@ -562,14 +562,14 @@ function StateMessage({
     onRetry?: () => void;
 }) {
     return (
-        <main className="flex min-h-screen items-center justify-center bg-[#070713] px-4 text-white">
-            <section className="w-full max-w-xl rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center">
+        <main className="flex min-h-screen items-center justify-center bg-[#020403] px-4 text-white">
+            <section className="w-full max-w-xl rounded-3xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90 p-8 text-center">
                 <span className="text-5xl">{icon}</span>
-                <p className="mt-6 text-xs font-bold uppercase tracking-[0.3em] text-violet-300">
+                <p className="mt-6 text-xs font-bold uppercase tracking-[0.3em] text-lime-200">
                     {eyebrow}
                 </p>
                 <h1 className="mt-3 text-3xl font-black">{title}</h1>
-                <p className="mt-4 leading-7 text-slate-400">
+                <p className="mt-4 leading-7 text-[var(--mythoria-text-muted)]">
                     {description}
                 </p>
                 <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
@@ -577,14 +577,14 @@ function StateMessage({
                         <button
                             type="button"
                             onClick={onRetry}
-                            className="rounded-xl bg-violet-600 px-5 py-3 font-bold transition hover:bg-violet-500"
+                            className="rounded-xl bg-green-700 px-5 py-3 font-bold transition hover:bg-lime-500"
                         >
                             Erneut versuchen
                         </button>
                     )}
                     <Link
                         href="/dashboard/characters"
-                        className="rounded-xl border border-white/10 px-5 py-3 font-bold text-slate-300 transition hover:border-violet-400/40"
+                        className="rounded-xl border border-[var(--mythoria-border)] px-5 py-3 font-bold text-[var(--mythoria-text-secondary)] transition hover:border-lime-400/40"
                     >
                         Zurück zur Übersicht
                     </Link>
@@ -624,8 +624,8 @@ function BackgroundEffects() {
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 overflow-hidden"
         >
-            <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-violet-700/20 blur-[120px]" />
-            <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-fuchsia-700/10 blur-[140px]" />
+            <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-green-800/20 blur-[120px]" />
+            <div className="absolute -right-40 top-1/3 h-[32rem] w-[32rem] rounded-full bg-amber-800/10 blur-[140px]" />
             <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-blue-700/10 blur-[120px]" />
         </div>
     );

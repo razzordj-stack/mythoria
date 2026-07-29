@@ -1,0 +1,11 @@
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { MythoriaLogo } from "@/components/branding/MythoriaLogo";
+import { UserMenu } from "./UserMenu";
+import { dashboardNavigation, isNavigationItemActive } from "./navigation";
+
+export function DashboardSidebar({ email, displayName }: { email: string; displayName?: string }) {
+  const pathname = usePathname();
+  return <aside className="fixed inset-y-0 left-0 z-40 hidden w-[280px] flex-col border-r border-[var(--mythoria-border)] bg-[linear-gradient(180deg,rgba(11,14,8,.99),rgba(2,4,3,.99))] shadow-[18px_0_60px_rgba(0,0,0,.25)] lg:flex"><Link href="/dashboard" aria-label="Zum Mythoria-Dashboard" className="flex min-h-[132px] items-center justify-center border-b border-[var(--mythoria-border)] px-5 py-3"><MythoriaLogo size="small" /></Link><nav aria-label="Hauptnavigation" className="flex-1 space-y-1 overflow-y-auto px-3 py-5">{dashboardNavigation.map(item => { const active = isNavigationItemActive(pathname, item); if (!item.href) return <div key={item.label} aria-disabled="true" title="Bald verfügbar" className="flex min-h-11 cursor-not-allowed items-center gap-3 rounded-xl px-3 text-sm text-[var(--mythoria-text-disabled)]"><span aria-hidden="true" className="w-6 text-center text-base">{item.icon}</span><span>{item.label}</span><span className="ml-auto rounded-full border border-[var(--mythoria-border)] px-2 py-0.5 text-xs">Bald</span></div>; return <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} className={["relative flex min-h-11 items-center gap-3 rounded-xl border px-3 text-sm font-semibold transition", active ? "border-[var(--mythoria-border-gold)] bg-[linear-gradient(90deg,rgba(86,121,31,.28),rgba(38,59,13,.08))] text-[var(--mythoria-neon-soft)] shadow-[inset_3px_0_var(--mythoria-green-bright),0_0_22px_rgba(86,121,31,.12)]" : "border-transparent text-[var(--mythoria-text-secondary)] hover:border-[var(--mythoria-border)] hover:bg-[var(--mythoria-panel-hover)]"].join(" ")}><span aria-hidden="true" className="w-6 text-center text-base">{item.icon}</span><span>{item.label}</span></Link>; })}</nav><UserMenu email={email} displayName={displayName} /></aside>;
+}

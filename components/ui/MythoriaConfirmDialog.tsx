@@ -1,0 +1,4 @@
+"use client";
+import { MythoriaButton } from "./MythoriaButton";
+import { MythoriaModal } from "./MythoriaModal";
+export function MythoriaConfirmDialog({ open, title, description, confirmLabel = "Bestätigen", cancelLabel = "Abbrechen", danger = false, loading = false, onConfirm, onClose }: { open: boolean; title: string; description: string; confirmLabel?: string; cancelLabel?: string; danger?: boolean; loading?: boolean; onConfirm: () => void; onClose: () => void }) { return <MythoriaModal open={open} title={title} description={description} onClose={onClose} footer={<><MythoriaButton variant="ghost" onClick={onClose} disabled={loading}>{cancelLabel}</MythoriaButton><MythoriaButton variant={danger ? "danger" : "primary"} onClick={onConfirm} loading={loading}>{confirmLabel}</MythoriaButton></>}></MythoriaModal>; }

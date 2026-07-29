@@ -1,0 +1,3 @@
+import Link from "next/link";
+import {MythoriaLogo} from "@/components/branding/MythoriaLogo";
+export default function NotFound(){return <main className="mythoria-page flex min-h-screen items-center justify-center px-4 py-12"><section className="mythoria-panel w-full max-w-2xl p-8 text-center sm:p-12"><MythoriaLogo size="medium" className="mx-auto"/><p className="mt-6 font-fantasy text-6xl font-bold text-[var(--mythoria-border-gold)]">404</p><h1 className="mythoria-heading mt-4 text-3xl">Diese Seite ist aus den Chroniken verschwunden.</h1><p className="mt-4 text-[var(--mythoria-text-muted)]">Der gesuchte Pfad wurde nie geschrieben oder ist nicht länger Teil dieser Welt.</p><Link href="/" className="mythoria-button-primary mt-7">Zur Startseite</Link></section></main>}
