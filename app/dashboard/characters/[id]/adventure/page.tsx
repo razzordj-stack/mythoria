@@ -13,6 +13,7 @@ type Character = {
   race: string;
   character_class: string;
   level: number;
+  experience: number;
   health: number;
   max_health: number;
   mana: number;
@@ -62,7 +63,7 @@ export default function AdventurePage() {
     const { data: c, error: ce } = await supabase
       .from("characters")
       .select(
-        "id,user_id,name,race,character_class,level,health,max_health,mana,max_mana,gold",
+        "id,user_id,name,race,character_class,level,experience,health,max_health,mana,max_mana,gold",
       )
       .eq("id", id)
       .eq("user_id", user.id)
@@ -114,6 +115,23 @@ export default function AdventurePage() {
     else await load();
     setBusy(false);
   }
+  async function complete() {
+    if (
+      !session ||
+      !window.confirm(
+        "Möchtest du diese Chronik wirklich abschließen? Sie bleibt anschließend im Archiv lesbar.",
+      )
+    )
+      return;
+    setBusy(true);
+    setError("");
+    const { error: completeError } = await supabase.rpc("complete_adventure", {
+      p_session_id: session.id,
+    });
+    if (completeError) setError(completeError.message);
+    else await load();
+    setBusy(false);
+  }
   async function submit(event: FormEvent) {
     event.preventDefault();
     const text = input.trim();
@@ -129,7 +147,11 @@ export default function AdventurePage() {
       const response = await fetch("/api/adventure/respond", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId: session.id, action: text }),
+        body: JSON.stringify({
+          sessionId: session.id,
+          requestId: crypto.randomUUID(),
+          action: text,
+        }),
       });
       const result: unknown = await response.json();
       if (!response.ok)
@@ -191,6 +213,12 @@ export default function AdventurePage() {
             >
               Zurück
             </Link>
+            <Link
+              href={`/dashboard/characters/${id}/adventure/history`}
+              className="mythoria-button-secondary"
+            >
+              Chronikarchiv
+            </Link>
           </div>
         </section>
       </main>
@@ -209,12 +237,28 @@ export default function AdventurePage() {
             {new Date(session.updated_at).toLocaleString("de-DE")}
           </p>
         </div>
-        <Link
-          href={"/dashboard/characters/" + id}
-          className="mythoria-button-secondary"
-        >
-          Zum Charakter
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/dashboard/characters/${id}/adventure/history`}
+            className="mythoria-button-secondary"
+          >
+            Archiv
+          </Link>
+          <button
+            type="button"
+            onClick={() => void complete()}
+            disabled={busy}
+            className="mythoria-button-secondary"
+          >
+            Chronik abschließen
+          </button>
+          <Link
+            href={"/dashboard/characters/" + id}
+            className="mythoria-button-secondary"
+          >
+            Zum Charakter
+          </Link>
+        </div>
       </header>
       <div className="mt-5 grid gap-5 xl:grid-cols-[250px_minmax(0,1fr)_250px]">
         <CharacterPanel character={character} />
@@ -235,6 +279,7 @@ export default function AdventurePage() {
                 <p className="mt-2 whitespace-pre-wrap leading-7 text-[var(--mythoria-text-secondary)]">
                   {message.content}
                 </p>
+                <AdventureEffects data={message.structured_data} />
               </article>
             ))}
           </div>
@@ -286,7 +331,7 @@ export default function AdventurePage() {
                 disabled={busy || input.trim().length < 2}
                 className="mythoria-button-primary"
               >
-                  {busy ? "Der Spielleiter antwortet …" : "Handlung ausführen"}
+                {busy ? "Der Spielleiter antwortet …" : "Handlung ausführen"}
               </button>
             </div>
           </form>
@@ -310,9 +355,7 @@ export default function AdventurePage() {
               <dt className="text-[var(--mythoria-text-muted)]">
                 KI-Dungeon-Master
               </dt>
-                  <dd className="text-[var(--mythoria-success)]">
-                    Aktiv
-              </dd>
+              <dd className="text-[var(--mythoria-success)]">Aktiv</dd>
             </div>
           </dl>
         </aside>
@@ -344,6 +387,9 @@ function CharacterPanel({ character }: { character: Character }) {
       />
       <p className="mt-5 text-sm font-bold text-[var(--mythoria-gold-light)]">
         {character.gold} Gold
+      </p>
+      <p className="mt-2 text-xs text-[var(--mythoria-text-muted)]">
+        {character.experience} Erfahrung
       </p>
     </aside>
   );
@@ -390,6 +436,65 @@ function lastChoices(messages: Message[]) {
       );
   }
   return [];
+}
+function AdventureEffects({ data }: { data: unknown }) {
+  if (!isRecord(data)) return null;
+  const effectData = isRecord(data.effects) ? data.effects : {};
+  const labels: Array<[string, string]> = [
+    ["health", "Leben"],
+    ["mana", "Mana"],
+    ["gold", "Gold"],
+    ["experience", "EP"],
+  ];
+  const effects = labels.flatMap(([key, label]) => {
+    const value = effectData[key];
+    return typeof value === "number" && value !== 0 ? [{ label, value }] : [];
+  });
+  const rewards = Array.isArray(data.itemRewards)
+    ? data.itemRewards.filter(isRecord)
+    : [];
+  const questUpdates = Array.isArray(data.questUpdates)
+    ? data.questUpdates.filter(isRecord)
+    : [];
+  if (effects.length === 0 && rewards.length === 0 && questUpdates.length === 0)
+    return null;
+  return (
+    <div
+      className="mt-4 flex flex-wrap gap-2"
+      aria-label="Auswirkungen der Szene"
+    >
+      {effects.map(({ label, value }) => (
+        <span
+          key={label}
+          className={`rounded-full border px-3 py-1 text-xs font-bold ${
+            value > 0
+              ? "border-[var(--mythoria-success)]/40 text-[var(--mythoria-success)]"
+              : "border-[var(--mythoria-health)]/40 text-[var(--mythoria-health)]"
+          }`}
+        >
+          {label} {value > 0 ? "+" : ""}
+          {value}
+        </span>
+      ))}
+      {rewards.map((reward, index) => (
+        <span
+          key={`reward-${index}`}
+          className="rounded-full border border-[var(--mythoria-border-gold)] px-3 py-1 text-xs font-bold text-[var(--mythoria-gold-light)]"
+        >
+          Gegenstand:{" "}
+          {typeof reward.name === "string" ? reward.name : "Belohnung"}
+        </span>
+      ))}
+      {questUpdates.map((update, index) => (
+        <span
+          key={`quest-${index}`}
+          className="rounded-full border border-[var(--mythoria-mana)]/40 px-3 py-1 text-xs font-bold text-[var(--mythoria-mana)]"
+        >
+          Quest +{typeof update.progress === "number" ? update.progress : 0}%
+        </span>
+      ))}
+    </div>
+  );
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

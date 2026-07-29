@@ -2,26 +2,27 @@
 
 ## Vorhandene und gestaltete Routen
 
-| Route | Status |
-|---|---|
-| `/` | Startseite gestaltet |
-| `/login` | Authentifizierung gestaltet |
-| `/register` | Registrierung gestaltet |
-| `/forgot-password` | Passwort-Reset-Anforderung gestaltet |
-| `/reset-password` | Passwortänderung gestaltet |
-| `/dashboard` | Vorhandene Funktionen gestaltet |
-| `/dashboard/characters` | Charakterübersicht gestaltet |
-| `/dashboard/characters/new` | Charaktererstellung gestaltet |
-| `/dashboard/characters/[id]` | Charakterdetail gestaltet |
-| `/dashboard/characters/[id]/edit` | Charakterbearbeitung gestaltet |
-| `/dashboard/characters/[id]/inventory` | Inventar gestaltet |
-| `/dashboard/characters/[id]/inventory/new` | Gegenstandsformular gestaltet |
-| `/dashboard/characters/[id]/inventory/[itemId]/edit` | Gegenstandsbearbeitung gestaltet |
-| `/dashboard/characters/[id]/quests` | Questbuch gestaltet |
-| `/dashboard/characters/[id]/adventure` | Gespeicherte Abenteuer-Sessions und Verlauf |
-| `/dashboard/profile` | Profil gestaltet |
-| `/dashboard/world` | Datenfreier Platzhalter |
-| `/dashboard/settings` | Datenfreier Platzhalter |
+| Route                                                | Status                                                      |
+| ---------------------------------------------------- | ----------------------------------------------------------- |
+| `/`                                                  | Startseite gestaltet                                        |
+| `/login`                                             | Authentifizierung gestaltet                                 |
+| `/register`                                          | Registrierung gestaltet                                     |
+| `/forgot-password`                                   | Passwort-Reset-Anforderung gestaltet                        |
+| `/reset-password`                                    | Passwortänderung gestaltet                                  |
+| `/dashboard`                                         | Vorhandene Funktionen gestaltet                             |
+| `/dashboard/characters`                              | Charakterübersicht gestaltet                                |
+| `/dashboard/characters/new`                          | Charaktererstellung gestaltet                               |
+| `/dashboard/characters/[id]`                         | Charakterdetail gestaltet                                   |
+| `/dashboard/characters/[id]/edit`                    | Charakterbearbeitung gestaltet                              |
+| `/dashboard/characters/[id]/inventory`               | Inventar gestaltet                                          |
+| `/dashboard/characters/[id]/inventory/new`           | Gegenstandsformular gestaltet                               |
+| `/dashboard/characters/[id]/inventory/[itemId]/edit` | Gegenstandsbearbeitung gestaltet                            |
+| `/dashboard/characters/[id]/quests`                  | Questbuch gestaltet                                         |
+| `/dashboard/characters/[id]/adventure`               | Gespeicherte Abenteuer-Sessions und Verlauf                 |
+| `/dashboard/characters/[id]/adventure/history`       | Lesbares Archiv aller Chroniken eines Charakters            |
+| `/dashboard/profile`                                 | Profil gestaltet                                            |
+| `/dashboard/world`                                   | Durchsuchbares, aus Supabase geladenes Weltlexikon          |
+| `/dashboard/settings`                                | Persönliche, serverseitig begrenzte Spielleiter-Präferenzen |
 
 ## Globale Zustände
 

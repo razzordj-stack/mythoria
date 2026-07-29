@@ -14,14 +14,90 @@ const RESPONSE_SCHEMA = {
       items: { type: "string", minLength: 2, maxLength: 180 },
     },
     scene: { type: "string", minLength: 2, maxLength: 160 },
+    effects: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        health: { type: "integer", minimum: -25, maximum: 20 },
+        mana: { type: "integer", minimum: -20, maximum: 15 },
+        gold: { type: "integer", minimum: -20, maximum: 50 },
+        experience: { type: "integer", minimum: 0, maximum: 40 },
+      },
+      required: ["health", "mana", "gold", "experience"],
+    },
+    itemRewards: {
+      type: "array",
+      maxItems: 1,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          name: { type: "string", minLength: 2, maxLength: 80 },
+          description: { type: "string", minLength: 2, maxLength: 300 },
+          itemType: {
+            type: "string",
+            enum: [
+              "weapon",
+              "armor",
+              "potion",
+              "scroll",
+              "quest",
+              "material",
+              "other",
+            ],
+          },
+          rarity: { type: "string", enum: ["common", "uncommon"] },
+        },
+        required: ["name", "description", "itemType", "rarity"],
+      },
+    },
+    questUpdates: {
+      type: "array",
+      maxItems: 1,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          questId: { type: "string", minLength: 36, maxLength: 36 },
+          progress: { type: "integer", minimum: 1, maximum: 25 },
+          note: { type: "string", minLength: 2, maxLength: 240 },
+        },
+        required: ["questId", "progress", "note"],
+      },
+    },
   },
-  required: ["narrative", "choices", "scene"],
+  required: [
+    "narrative",
+    "choices",
+    "scene",
+    "effects",
+    "itemRewards",
+    "questUpdates",
+  ],
 } as const;
 
 type AdventureResponse = {
   narrative: string;
   choices: string[];
   scene: string;
+  effects: AdventureEffects;
+  itemRewards: ItemReward[];
+  questUpdates: QuestUpdate[];
+};
+
+type ItemReward = {
+  name: string;
+  description: string;
+  itemType: string;
+  rarity: string;
+};
+type QuestUpdate = { questId: string; progress: number; note: string };
+
+type AdventureEffects = {
+  health: number;
+  mana: number;
+  gold: number;
+  experience: number;
 };
 
 type OpenAIResponse = {
@@ -30,9 +106,18 @@ type OpenAIResponse = {
   error?: { message?: string };
 };
 
+type OpenRouterResponse = {
+  choices?: Array<{
+    message?: { content?: string | null };
+    error?: { message?: string };
+  }>;
+  error?: { message?: string };
+};
+
 export async function POST(request: Request) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  const openRouterApiKey = process.env.OPENROUTER_API_KEY;
+  const openAIApiKey = process.env.OPENAI_API_KEY;
+  if (!openRouterApiKey && !openAIApiKey) {
     return Response.json(
       { error: "Der KI-Spielleiter ist noch nicht konfiguriert." },
       { status: 503 },
@@ -49,6 +134,7 @@ export async function POST(request: Request) {
   if (
     !isRecord(body) ||
     typeof body.sessionId !== "string" ||
+    typeof body.requestId !== "string" ||
     typeof body.action !== "string"
   ) {
     return Response.json(
@@ -58,8 +144,14 @@ export async function POST(request: Request) {
   }
 
   const sessionId = body.sessionId;
+  const requestId = body.requestId;
   const action = body.action.trim();
-  if (!isUuid(sessionId) || action.length < 2 || action.length > 2000) {
+  if (
+    !isUuid(sessionId) ||
+    !isUuid(requestId) ||
+    action.length < 2 ||
+    action.length > 2000
+  ) {
     return Response.json(
       { error: "Die Handlung muss zwischen 2 und 2.000 Zeichen lang sein." },
       { status: 400 },
@@ -98,7 +190,7 @@ export async function POST(request: Request) {
     supabase
       .from("characters")
       .select(
-        "name,race,character_class,level,health,max_health,mana,max_mana,gold,strength,dexterity,intelligence,constitution,wisdom,charisma",
+        "name,race,character_class,level,experience,health,max_health,mana,max_mana,gold,strength,dexterity,intelligence,constitution,wisdom,charisma,current_location_id,world_locations(name,region,biome,description,danger_level,recommended_level)",
       )
       .eq("id", session.character_id)
       .eq("user_id", authData.user.id)
@@ -111,7 +203,9 @@ export async function POST(request: Request) {
       .limit(30),
     supabase
       .from("character_quests")
-      .select("status,progress,quests(title,description,difficulty)")
+      .select(
+        "id,quest_id,status,progress,quests(title,description,difficulty)",
+      )
       .eq("character_id", session.character_id)
       .eq("user_id", authData.user.id)
       .eq("status", "active")
@@ -131,45 +225,63 @@ export async function POST(request: Request) {
     );
   }
 
+  const { data: requestStatus, error: requestError } = await supabase.rpc(
+    "begin_adventure_turn_request",
+    { p_request_id: requestId, p_session_id: sessionId },
+  );
+  if (requestError) {
+    return Response.json(
+      { error: "Die Handlung konnte nicht reserviert werden." },
+      { status: 500 },
+    );
+  }
+  if (requestStatus !== "started") {
+    return Response.json(
+      {
+        error:
+          requestStatus === "throttled"
+            ? "Bitte warte einen Moment vor der nächsten Handlung."
+            : "Diese Handlung wird bereits verarbeitet.",
+      },
+      { status: 409 },
+    );
+  }
+
   const history = (messageRows ?? []).reverse().map((message) => ({
     role: message.role === "user" ? "user" : "assistant",
     content: message.content,
   }));
   history.push({ role: "user", content: action });
 
-  const openAIResponse = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || "gpt-5.6-sol",
-      instructions: buildInstructions(
-        character,
-        inventory ?? [],
-        questRows ?? [],
-      ),
-      input: history,
-      text: {
-        format: {
-          type: "json_schema",
-          name: "mythoria_adventure_turn",
-          strict: true,
-          schema: RESPONSE_SCHEMA,
-        },
-      },
-    }),
-  });
-
-  const openAIData = (await openAIResponse
-    .json()
-    .catch(() => ({}))) as OpenAIResponse;
-  if (!openAIResponse.ok) {
+  const instructions = buildInstructions(
+    character,
+    inventory ?? [],
+    questRows ?? [],
+    readAdventurePreferences(authData.user.user_metadata),
+  );
+  let modelResult;
+  try {
+    modelResult = openRouterApiKey
+      ? await requestOpenRouter(openRouterApiKey, instructions, history)
+      : await requestOpenAI(openAIApiKey!, instructions, history);
+  } catch (caught) {
+    await finishRequest(supabase, requestId, false, "provider_timeout");
     console.error(
-      "OpenAI adventure response failed",
-      openAIResponse.status,
-      openAIData.error?.message,
+      "Adventure model request failed",
+      caught instanceof Error ? caught.message : "unknown",
+    );
+    return Response.json(
+      { error: "Der KI-Spielleiter hat nicht rechtzeitig geantwortet." },
+      { status: 504 },
+    );
+  }
+  if (!modelResult.ok) {
+    await finishRequest(supabase, requestId, false, "provider_error");
+    console.error(
+      "Adventure model response failed",
+      modelResult.provider,
+      modelResult.status,
+      modelResult.error,
     );
     return Response.json(
       {
@@ -180,9 +292,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const outputText = extractOutputText(openAIData);
-  const result = parseAdventureResponse(outputText);
+  const result = parseAdventureResponse(modelResult.output);
   if (!result) {
+    await finishRequest(supabase, requestId, false, "invalid_response");
     console.error("OpenAI adventure response had an invalid structure");
     return Response.json(
       {
@@ -197,14 +309,21 @@ export async function POST(request: Request) {
     kind: "adventure_turn",
     choices: result.choices,
     scene: result.scene,
+    effects: result.effects,
+    itemRewards: result.itemRewards,
+    questUpdates: result.questUpdates,
   };
   const { error: saveError } = await supabase.rpc("record_adventure_turn", {
     p_session_id: sessionId,
     p_action: action,
     p_response: result.narrative,
     p_structured_data: structuredData,
+    p_effects: result.effects,
+    p_item_rewards: result.itemRewards,
+    p_quest_updates: result.questUpdates,
   });
   if (saveError) {
+    await finishRequest(supabase, requestId, false, "persistence_error");
     console.error("Adventure turn persistence failed", saveError.message);
     return Response.json(
       { error: "Die neue Szene konnte nicht gespeichert werden." },
@@ -212,28 +331,182 @@ export async function POST(request: Request) {
     );
   }
 
+  await finishRequest(supabase, requestId, true);
+
   return Response.json({
     response: result.narrative,
     choices: result.choices,
     scene: result.scene,
+    effects: result.effects,
+    itemRewards: result.itemRewards,
+    questUpdates: result.questUpdates,
   });
+}
+
+async function requestOpenRouter(
+  apiKey: string,
+  instructions: string,
+  history: Array<{ role: string; content: string }>,
+) {
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "X-OpenRouter-Title": "Mythoria",
+      },
+      body: JSON.stringify({
+        model:
+          process.env.OPENROUTER_MODEL || "@preset/mythoria-dungeon-master",
+        messages: [{ role: "system", content: instructions }, ...history],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "mythoria_adventure_turn",
+            strict: true,
+            schema: RESPONSE_SCHEMA,
+          },
+        },
+      }),
+      signal: AbortSignal.timeout(45_000),
+    },
+  );
+  const data = (await response.json().catch(() => ({}))) as OpenRouterResponse;
+  return {
+    ok: response.ok,
+    provider: "openrouter",
+    status: response.status,
+    output: data.choices?.[0]?.message?.content ?? "",
+    error: data.error?.message ?? data.choices?.[0]?.error?.message,
+  };
+}
+
+async function requestOpenAI(
+  apiKey: string,
+  instructions: string,
+  history: Array<{ role: string; content: string }>,
+) {
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: process.env.OPENAI_MODEL || "gpt-5.6-sol",
+      instructions,
+      input: history,
+      text: {
+        format: {
+          type: "json_schema",
+          name: "mythoria_adventure_turn",
+          strict: true,
+          schema: RESPONSE_SCHEMA,
+        },
+      },
+    }),
+    signal: AbortSignal.timeout(45_000),
+  });
+  const data = (await response.json().catch(() => ({}))) as OpenAIResponse;
+  return {
+    ok: response.ok,
+    provider: "openai",
+    status: response.status,
+    output: extractOutputText(data),
+    error: data.error?.message,
+  };
+}
+
+async function finishRequest(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  requestId: string,
+  success: boolean,
+  errorCode?: string,
+) {
+  const { error } = await supabase.rpc("finish_adventure_turn_request", {
+    p_request_id: requestId,
+    p_success: success,
+    p_error_code: errorCode ?? null,
+  });
+  if (error) {
+    console.error("Adventure request finalization failed", error.message);
+  }
 }
 
 function buildInstructions(
   character: unknown,
   inventory: unknown[],
   quests: unknown[],
+  preferences: AdventurePreferences,
 ) {
   return [
     "Du bist der deutschsprachige Dungeon Master von Mythoria, einem atmosphärischen Fantasy-Rollenspiel.",
     "Setze die Chronik kohärent fort, reagiere konkret auf die letzte Spielerhandlung und erfinde keine bereits geschehenen Ereignisse um.",
-    "Schreibe bildhaft in der zweiten Person, 2 bis 5 kurze Absätze. Entscheide nie anstelle der Spielfigur.",
+    "Schreibe bildhaft in der zweiten Person und entscheide nie anstelle der Spielfigur.",
     "Biete genau drei unterschiedliche, unmittelbar ausführbare Handlungsoptionen an. Freie Eingaben bleiben jederzeit möglich.",
-    "Verändere keine Charakterwerte, Gegenstände oder Quests. Diese Daten dienen in diesem Schritt ausschließlich als Kontext.",
+    "Leite aus der Handlung nur nachvollziehbare, sparsame Werteänderungen ab. Verwende bei keinem Ereignis für alle Werte gleichzeitig Änderungen.",
+    "health: Schaden negativ, Heilung positiv. mana: Verbrauch negativ, Regeneration positiv. gold: Ausgabe negativ, Fund oder Lohn positiv. experience: nur nichtnegative Belohnung für bedeutsamen Fortschritt.",
+    "Setze einen Effekt auf 0, wenn die Erzählung keine klare Änderung rechtfertigt. Die Anwendung wird serverseitig begrenzt.",
+    "Verändere keine Ausrüstungseigenschaften und schließe keine Quests selbstständig ab.",
+    "Vergib höchstens einen einfachen, plausiblen Gegenstand und nur wenn er in der Szene tatsächlich gefunden oder erhalten wurde. Sonst itemRewards als leeres Array.",
+    "Aktualisiere höchstens eine aktive Quest aus dem bereitgestellten Kontext. Verwende exakt deren quest_id und nur bei eindeutigem Fortschritt. Sonst questUpdates als leeres Array.",
+    "Eine Quest darf durch diesen Schritt nicht abgeschlossen werden; der Fortschritt bleibt unter 100 Prozent.",
+    `Gewünschte Stimmung: ${preferences.tone}.`,
+    `Gewünschter Erzählumfang: ${preferences.length}.`,
+    `Gewünschtes Gefahrengefühl: ${preferences.difficulty}.`,
     `Charakter: ${JSON.stringify(character)}`,
     `Inventar: ${JSON.stringify(inventory)}`,
     `Aktive Quests: ${JSON.stringify(quests)}`,
   ].join("\n");
+}
+
+type AdventurePreferences = {
+  tone: string;
+  length: string;
+  difficulty: string;
+};
+
+function readAdventurePreferences(metadata: unknown): AdventurePreferences {
+  const defaults = {
+    tone: "geheimnisvoll",
+    length: "ausgewogen",
+    difficulty: "ausgewogen",
+  };
+  if (!isRecord(metadata) || !isRecord(metadata.adventure_preferences))
+    return defaults;
+  const source = metadata.adventure_preferences;
+  const tones: Record<string, string> = {
+    heroic: "heldenhaft",
+    dark: "düster",
+    mysterious: "geheimnisvoll",
+    lighthearted: "leicht und humorvoll",
+  };
+  const lengths: Record<string, string> = {
+    compact: "kompakt, zwei kurze Absätze",
+    balanced: "ausgewogen, zwei bis fünf Absätze",
+    detailed: "ausführlich, vier bis sechs Absätze",
+  };
+  const difficulties: Record<string, string> = {
+    forgiving: "nachsichtig",
+    balanced: "ausgewogen",
+    dangerous: "gefährlich mit nachvollziehbaren Konsequenzen",
+  };
+  return {
+    tone:
+      typeof source.tone === "string" && tones[source.tone]
+        ? tones[source.tone]
+        : defaults.tone,
+    length:
+      typeof source.length === "string" && lengths[source.length]
+        ? lengths[source.length]
+        : defaults.length,
+    difficulty:
+      typeof source.difficulty === "string" && difficulties[source.difficulty]
+        ? difficulties[source.difficulty]
+        : defaults.difficulty,
+  };
 }
 
 function extractOutputText(response: OpenAIResponse) {
@@ -247,13 +520,21 @@ function extractOutputText(response: OpenAIResponse) {
   return "";
 }
 
-function parseAdventureResponse(value: string): AdventureResponse | null {
+export function parseAdventureResponse(
+  value: string,
+): AdventureResponse | null {
   try {
     const parsed: unknown = JSON.parse(value);
     if (
       !isRecord(parsed) ||
       typeof parsed.narrative !== "string" ||
-      typeof parsed.scene !== "string"
+      typeof parsed.scene !== "string" ||
+      !isAdventureEffects(parsed.effects)
+    )
+      return null;
+    if (
+      !isItemRewards(parsed.itemRewards) ||
+      !isQuestUpdates(parsed.questUpdates)
     )
       return null;
     if (
@@ -272,17 +553,89 @@ function parseAdventureResponse(value: string): AdventureResponse | null {
       choices.some((choice) => choice.length < 1 || choice.length > 180)
     )
       return null;
-    return { narrative, scene, choices };
+    return {
+      narrative,
+      scene,
+      choices,
+      effects: parsed.effects,
+      itemRewards: parsed.itemRewards,
+      questUpdates: parsed.questUpdates,
+    };
   } catch {
     return null;
   }
+}
+
+function isItemRewards(value: unknown): value is ItemReward[] {
+  if (!Array.isArray(value) || value.length > 1) return false;
+  const types = [
+    "weapon",
+    "armor",
+    "potion",
+    "scroll",
+    "quest",
+    "material",
+    "other",
+  ];
+  return value.every(
+    (item) =>
+      isRecord(item) &&
+      typeof item.name === "string" &&
+      item.name.trim().length >= 2 &&
+      item.name.length <= 80 &&
+      typeof item.description === "string" &&
+      item.description.trim().length >= 2 &&
+      item.description.length <= 300 &&
+      typeof item.itemType === "string" &&
+      types.includes(item.itemType) &&
+      typeof item.rarity === "string" &&
+      ["common", "uncommon"].includes(item.rarity),
+  );
+}
+
+function isQuestUpdates(value: unknown): value is QuestUpdate[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= 1 &&
+    value.every(
+      (update) =>
+        isRecord(update) &&
+        typeof update.questId === "string" &&
+        isUuid(update.questId) &&
+        Number.isInteger(update.progress) &&
+        Number(update.progress) >= 1 &&
+        Number(update.progress) <= 25 &&
+        typeof update.note === "string" &&
+        update.note.trim().length >= 2 &&
+        update.note.length <= 240,
+    )
+  );
+}
+
+function isAdventureEffects(value: unknown): value is AdventureEffects {
+  if (!isRecord(value)) return false;
+  const limits: Record<keyof AdventureEffects, [number, number]> = {
+    health: [-25, 20],
+    mana: [-20, 15],
+    gold: [-20, 50],
+    experience: [0, 40],
+  };
+  return (Object.keys(limits) as Array<keyof AdventureEffects>).every((key) => {
+    const amount = value[key];
+    const [minimum, maximum] = limits[key];
+    return (
+      Number.isInteger(amount) &&
+      Number(amount) >= minimum &&
+      Number(amount) <= maximum
+    );
+  });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isUuid(value: string) {
+export function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
   );
