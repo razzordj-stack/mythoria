@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import Link from "next/link";
@@ -14,7 +14,7 @@ export default function LoginPage() {
     const [message, setMessage] = useState("");
     const [messageType, setMessageType] = useState<"error" | "success">("error");
     const router = useRouter();
-    const supabase = createClient();
+    const supabase = useMemo(() => createClient(), []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -38,7 +38,8 @@ export default function LoginPage() {
                 return;
             }
 
-            router.push("/dashboard");
+            router.replace("/dashboard");
+            router.refresh();
         } else {
             const { error } = await supabase.auth.signUp({
                 email,
@@ -52,7 +53,7 @@ export default function LoginPage() {
                 return;
             }
 
-            setMessage("Konto erfolgreich erstellt! Du kannst dich jetzt einloggen.");
+            setMessage("Konto erstellt! Prüfe dein E-Mail-Postfach und bestätige deine Adresse.");
             setMessageType("success");
             setIsLogin(true);
         }
@@ -168,9 +169,12 @@ export default function LoginPage() {
                         {/* E-Mail Formular */}
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
-                                <label className="block text-sm font-medium text-zinc-300 mb-1.5">E-Mail</label>
+                                <label htmlFor="email" className="block text-sm font-medium text-zinc-300 mb-1.5">E-Mail</label>
                                 <input
+                                    id="email"
+                                    name="email"
                                     type="email"
+                                    autoComplete="email"
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
@@ -180,9 +184,12 @@ export default function LoginPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-zinc-300 mb-1.5">Passwort</label>
+                                <label htmlFor="password" className="block text-sm font-medium text-zinc-300 mb-1.5">Passwort</label>
                                 <input
+                                    id="password"
+                                    name="password"
                                     type="password"
+                                    autoComplete={isLogin ? "current-password" : "new-password"}
                                     required
                                     minLength={6}
                                     value={password}
@@ -217,6 +224,7 @@ export default function LoginPage() {
                                 <>
                                     Noch kein Konto?{" "}
                                     <button
+                                        type="button"
                                         onClick={() => {
                                             setIsLogin(false);
                                             setMessage("");
@@ -230,6 +238,7 @@ export default function LoginPage() {
                                 <>
                                     Bereits ein Konto?{" "}
                                     <button
+                                        type="button"
                                         onClick={() => {
                                             setIsLogin(true);
                                             setMessage("");
