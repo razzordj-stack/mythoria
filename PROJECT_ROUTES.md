@@ -18,7 +18,7 @@
 | `/dashboard/characters/[id]/inventory/new` | Gegenstandsformular gestaltet |
 | `/dashboard/characters/[id]/inventory/[itemId]/edit` | Gegenstandsbearbeitung gestaltet |
 | `/dashboard/characters/[id]/quests` | Questbuch gestaltet |
-| `/dashboard/characters/[id]/adventure` | Geschützter Platzhalter gestaltet |
+| `/dashboard/characters/[id]/adventure` | Gespeicherte Abenteuer-Sessions und Verlauf |
 | `/dashboard/profile` | Profil gestaltet |
 | `/dashboard/world` | Datenfreier Platzhalter |
 | `/dashboard/settings` | Datenfreier Platzhalter |
