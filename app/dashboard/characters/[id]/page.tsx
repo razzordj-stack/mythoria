@@ -270,6 +270,8 @@ export default function CharacterDetailPage() {
                     </div>
                 </header>
 
+                <QuickActions characterId={character.id} />
+
                 <section className="overflow-hidden rounded-3xl border border-white/10 bg-[#0c0b1c]/90 shadow-2xl shadow-violet-950/30">
                     <div className="relative flex min-h-72 items-center justify-center overflow-hidden border-b border-white/10 bg-gradient-to-br from-violet-950 via-[#17102f] to-black px-6 py-10">
                         <div className="absolute -left-16 -top-16 h-64 w-64 rounded-full bg-violet-500/20 blur-[90px]" />
@@ -300,6 +302,9 @@ export default function CharacterDetailPage() {
                                 <InfoCard
                                     label="Erfahrung"
                                     value={experience.toLocaleString("de-DE") + " EP"}
+                                />                                <InfoCard
+                                    label="Erstellt am"
+                                    value={formatDate(character.created_at)}
                                 />
                             </div>
 
@@ -408,6 +413,50 @@ export default function CharacterDetailPage() {
     );
 }
 
+function QuickActions({ characterId }: { characterId: string }) {
+    const actions = [
+        {
+            label: "Charakter bearbeiten",
+            icon: "✍️",
+            href: "/dashboard/characters/" + characterId + "/edit",
+        },
+        {
+            label: "Inventar",
+            icon: "🎒",
+            href: "/dashboard/characters/" + characterId + "/inventory",
+        },
+        {
+            label: "Quests",
+            icon: "📜",
+            href: "/dashboard/characters/" + characterId + "/quests",
+        },
+        {
+            label: "Abenteuer starten",
+            icon: "🗺️",
+            href: "/dashboard/characters/" + characterId + "/adventure",
+        },
+    ];
+
+    return (
+        <nav
+            aria-label="Charakter-Schnellzugriffe"
+            className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+        >
+            {actions.map((action) => (
+                <Link
+                    key={action.label}
+                    href={action.href}
+                    className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 font-bold text-slate-200 transition hover:-translate-y-0.5 hover:border-violet-400/40 hover:bg-violet-500/10"
+                >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/25 text-xl transition group-hover:scale-105">
+                        {action.icon}
+                    </span>
+                    <span>{action.label}</span>
+                </Link>
+            ))}
+        </nav>
+    );
+}
 function InfoCard({ label, value }: { label: string; value: string }) {
     return (
         <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -545,6 +594,17 @@ function StateMessage({
     );
 }
 
+function formatDate(value: string | null) {
+    if (!value) return "Unbekannt";
+
+    const date = new Date(value);
+
+    return Number.isNaN(date.getTime())
+        ? "Unbekannt"
+        : new Intl.DateTimeFormat("de-DE", {
+              dateStyle: "long",
+          }).format(date);
+}
 function safeNumber(value: number | null, fallback: number) {
     return typeof value === "number" && Number.isFinite(value)
         ? Math.max(value, 0)

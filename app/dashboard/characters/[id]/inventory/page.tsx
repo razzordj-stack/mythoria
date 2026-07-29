@@ -79,7 +79,10 @@ export default function InventoryPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isNotFound, setIsNotFound] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [notice, setNotice] = useState<string | null>(null);
+    const [actionError, setActionError] = useState<string | null>(null);
+    const [updatingItemId, setUpdatingItemId] = useState<string | null>(
+        null,
+    );
 
     const loadInventory = useCallback(async () => {
         setIsLoading(true);
@@ -166,6 +169,67 @@ export default function InventoryPage() {
 
         return () => window.clearTimeout(timeoutId);
     }, [loadInventory]);
+    async function handleEquipment(item: InventoryItem) {
+        if (!supabase || !character) {
+            setActionError(
+                "Die Supabase-Verbindung ist nicht verfügbar.",
+            );
+            return;
+        }
+
+        setUpdatingItemId(item.id);
+        setActionError(null);
+
+        try {
+            const {
+                data: { user },
+                error: userError,
+            } = await supabase.auth.getUser();
+
+            if (userError) throw new Error(userError.message);
+            if (!user) throw new Error("Du bist nicht mehr angemeldet.");
+
+            const nextEquippedState = !item.is_equipped;
+            const { data, error } = await supabase
+                .from("inventory_items")
+                .update({ is_equipped: nextEquippedState })
+                .eq("id", item.id)
+                .eq("character_id", character.id)
+                .eq("user_id", user.id)
+                .select("id,is_equipped")
+                .maybeSingle()
+                .overrideTypes<
+                    { id: string; is_equipped: boolean } | null,
+                    { merge: false }
+                >();
+
+            if (error) throw new Error(error.message);
+            if (!data) {
+                throw new Error(
+                    "Der Gegenstand wurde nicht gefunden oder darf nicht geändert werden.",
+                );
+            }
+
+            setItems((currentItems) =>
+                currentItems.map((currentItem) =>
+                    currentItem.id === data.id
+                        ? {
+                              ...currentItem,
+                              is_equipped: data.is_equipped,
+                          }
+                        : currentItem,
+                ),
+            );
+        } catch (error) {
+            setActionError(
+                error instanceof Error
+                    ? error.message
+                    : "Der Ausrüstungsstatus konnte nicht geändert werden.",
+            );
+        } finally {
+            setUpdatingItemId(null);
+        }
+    }
 
     if (isLoading) {
         return (
@@ -247,52 +311,45 @@ export default function InventoryPage() {
                                 href={"/dashboard/characters/" + character.id}
                                 className="rounded-xl border border-white/10 px-5 py-3 text-center text-sm font-bold text-slate-300 transition hover:border-violet-400/40 hover:bg-white/5"
                             >
-                                Zum Charakterprofil
+                                Zurück zum Charakter
                             </Link>
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setNotice(
-                                        "Das Hinzufügen von Gegenständen wird im nächsten Inventar-Schritt umgesetzt.",
-                                    )
+                            <Link
+                                href={
+                                    "/dashboard/characters/" +
+                                    character.id +
+                                    "/inventory/new"
                                 }
-                                className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 text-sm font-black transition hover:brightness-110"
+                                className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 text-center text-sm font-black transition hover:brightness-110"
                             >
                                 Gegenstand hinzufügen
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 </header>
 
-                {notice && (
+
+                {actionError && (
                     <div
-                        role="status"
-                        className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-violet-400/25 bg-violet-500/10 p-4 text-sm text-violet-100"
+                        role="alert"
+                        className="mb-6 rounded-2xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-100"
                     >
-                        <span>{notice}</span>
-                        <button
-                            type="button"
-                            onClick={() => setNotice(null)}
-                            aria-label="Hinweis schließen"
-                            className="font-black text-violet-300"
-                        >
-                            ×
-                        </button>
+                        {actionError}
                     </div>
                 )}
 
                 {items.length === 0 ? (
-                    <EmptyInventory
-                        onAdd={() =>
-                            setNotice(
-                                "Das Hinzufügen von Gegenständen wird im nächsten Inventar-Schritt umgesetzt.",
-                            )
-                        }
-                    />
+                    <EmptyInventory characterId={character.id} />
                 ) : (
                     <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                         {items.map((item) => (
-                            <InventoryCard key={item.id} item={item} />
+                            <InventoryCard
+                                key={item.id}
+                                item={item}
+                                isUpdating={updatingItemId === item.id}
+                                onToggleEquipment={() =>
+                                    void handleEquipment(item)
+                                }
+                            />
                         ))}
                     </section>
                 )}
@@ -301,7 +358,15 @@ export default function InventoryPage() {
     );
 }
 
-function InventoryCard({ item }: { item: InventoryItem }) {
+function InventoryCard({
+    item,
+    isUpdating,
+    onToggleEquipment,
+}: {
+    item: InventoryItem;
+    isUpdating: boolean;
+    onToggleEquipment: () => void;
+}) {
     const normalizedType = item.item_type.toLowerCase();
     const normalizedRarity = item.rarity.toLowerCase();
     const icon = itemIcons[normalizedType] ?? "🎒";
@@ -355,6 +420,24 @@ function InventoryCard({ item }: { item: InventoryItem }) {
                     icon="🛡️"
                 />
             </div>
+
+            <button
+                type="button"
+                onClick={onToggleEquipment}
+                disabled={isUpdating}
+                className={[
+                    "mt-5 w-full rounded-xl border px-5 py-3 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-60",
+                    item.is_equipped
+                        ? "border-slate-400/30 bg-slate-500/10 text-slate-200 hover:bg-slate-500/20"
+                        : "border-emerald-400/30 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20",
+                ].join(" ")}
+            >
+                {isUpdating
+                    ? "Wird aktualisiert ..."
+                    : item.is_equipped
+                      ? "Ablegen"
+                      : "Ausrüsten"}
+            </button>
         </article>
     );
 }
@@ -378,7 +461,7 @@ function Bonus({
     );
 }
 
-function EmptyInventory({ onAdd }: { onAdd: () => void }) {
+function EmptyInventory({ characterId }: { characterId: string }) {
     return (
         <section className="rounded-3xl border border-dashed border-violet-400/30 bg-white/[0.03] px-6 py-20 text-center">
             <span className="text-6xl">🎒</span>
@@ -389,13 +472,16 @@ function EmptyInventory({ onAdd }: { onAdd: () => void }) {
                 Noch trägt dieser Charakter keine Waffen, Rüstung oder
                 Schätze bei sich.
             </p>
-            <button
-                type="button"
-                onClick={onAdd}
-                className="mt-7 rounded-xl bg-violet-600 px-6 py-3 font-black transition hover:bg-violet-500"
+            <Link
+                href={
+                    "/dashboard/characters/" +
+                    characterId +
+                    "/inventory/new"
+                }
+                className="mt-7 inline-flex rounded-xl bg-violet-600 px-6 py-3 font-black transition hover:bg-violet-500"
             >
                 Gegenstand hinzufügen
-            </button>
+            </Link>
         </section>
     );
 }
