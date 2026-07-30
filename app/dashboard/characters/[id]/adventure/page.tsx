@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MythoriaAlert } from "@/components/ui/MythoriaAlert";
 import { MythoriaSpinner } from "@/components/ui/MythoriaSpinner";
+import { AdventureNarrator } from "@/app/components/adventure-narrator";
+import { AdventureLiveTools } from "@/app/components/adventure-live-tools";
 
 type Character = {
   id: string;
@@ -19,7 +21,10 @@ type Character = {
   mana: number;
   max_mana: number;
   gold: number;
+  current_location_id: string | null;
 };
+type ActiveQuest = { title: string; progress: number | null };
+type CurrentLocation = { name: string; region: string; slug: string };
 type Session = {
   id: string;
   character_id: string;
@@ -44,6 +49,8 @@ export default function AdventurePage() {
   const [character, setCharacter] = useState<Character | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [activeQuest, setActiveQuest] = useState<ActiveQuest | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<CurrentLocation | null>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -63,7 +70,7 @@ export default function AdventurePage() {
     const { data: c, error: ce } = await supabase
       .from("characters")
       .select(
-        "id,user_id,name,race,character_class,level,experience,health,max_health,mana,max_mana,gold",
+        "id,user_id,name,race,character_class,level,experience,health,max_health,mana,max_mana,gold,current_location_id",
       )
       .eq("id", id)
       .eq("user_id", user.id)
@@ -75,6 +82,46 @@ export default function AdventurePage() {
       return;
     }
     setCharacter(c);
+    setActiveQuest(null);
+    setCurrentLocation(null);
+    if (c.current_location_id) {
+      const { data: location } = await supabase
+        .from("world_locations")
+        .select("name,region,slug")
+        .eq("id", c.current_location_id)
+        .maybeSingle()
+        .overrideTypes<CurrentLocation | null, { merge: false }>();
+      setCurrentLocation(location);
+    }
+    const { data: questEntry } = await supabase
+      .from("character_quests")
+      .select("quest_id,progress")
+      .eq("character_id", id)
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (questEntry) {
+      const { data: quest } = await supabase
+        .from("quests")
+        .select("title")
+        .eq("id", questEntry.quest_id)
+        .maybeSingle();
+      if (quest) {
+        const progress = questEntry.progress;
+        setActiveQuest({
+          title: quest.title,
+          progress:
+            progress &&
+            typeof progress === "object" &&
+            !Array.isArray(progress) &&
+            typeof progress.percent === "number"
+              ? progress.percent
+              : null,
+        });
+      }
+    }
     const { data: s, error: se } = await supabase
       .from("adventure_sessions")
       .select("id,character_id,user_id,title,status,started_at,updated_at")
@@ -224,23 +271,26 @@ export default function AdventurePage() {
       </main>
     );
   const choices = lastChoices(messages);
+  const narration = latestNarration(messages);
   return (
-    <main className="mythoria-page mx-auto max-w-[1440px] px-4 py-6">
-      <header className="mythoria-panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-bold tracking-[.18em] text-[var(--mythoria-green-bright)]">
-            LAUFENDE CHRONIK
-          </p>
-          <h1 className="mt-2 text-2xl">{session.title}</h1>
-          <p className="mt-1 text-sm text-[var(--mythoria-text-muted)]">
+    <main className="mythoria-page mx-auto max-w-[1440px] px-4 py-4">
+      <header className="mythoria-panel flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <p className="text-[9px] font-bold tracking-[.14em] text-[var(--mythoria-green-bright)]">
+              LAUFENDE CHRONIK
+            </p>
+            <h1 className="text-lg leading-tight">{session.title}</h1>
+          </div>
+          <p className="mt-0.5 text-[10px] text-[var(--mythoria-text-muted)]">
             Automatisch gespeichert ·{" "}
             {new Date(session.updated_at).toLocaleString("de-DE")}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           <Link
             href={`/dashboard/characters/${id}/adventure/history`}
-            className="mythoria-button-secondary"
+            className="inline-flex items-center justify-center rounded-lg border border-[var(--mythoria-border-gold)] bg-[var(--mythoria-surface-light)] px-2.5 py-1.5 text-[11px] font-bold text-[var(--mythoria-gold-light)] transition-colors hover:border-[var(--mythoria-gold-light)] hover:bg-[var(--mythoria-panel-hover)]"
           >
             Archiv
           </Link>
@@ -248,29 +298,33 @@ export default function AdventurePage() {
             type="button"
             onClick={() => void complete()}
             disabled={busy}
-            className="mythoria-button-secondary"
+            className="inline-flex items-center justify-center rounded-lg border border-[var(--mythoria-border-gold)] bg-[var(--mythoria-surface-light)] px-2.5 py-1.5 text-[11px] font-bold text-[var(--mythoria-gold-light)] transition-colors hover:border-[var(--mythoria-gold-light)] hover:bg-[var(--mythoria-panel-hover)] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Chronik abschließen
+            Abschließen
           </button>
           <Link
             href={"/dashboard/characters/" + id}
-            className="mythoria-button-secondary"
+            className="inline-flex items-center justify-center rounded-lg border border-[var(--mythoria-border-gold)] bg-[var(--mythoria-surface-light)] px-2.5 py-1.5 text-[11px] font-bold text-[var(--mythoria-gold-light)] transition-colors hover:border-[var(--mythoria-gold-light)] hover:bg-[var(--mythoria-panel-hover)]"
           >
-            Zum Charakter
+            Charakter
           </Link>
         </div>
       </header>
-      <div className="mt-5 grid gap-5 xl:grid-cols-[250px_minmax(0,1fr)_250px]">
-        <CharacterPanel character={character} />
+      <div className="mt-3 grid gap-3 lg:grid-cols-[180px_minmax(0,1fr)] xl:grid-cols-[190px_minmax(0,1fr)_210px]">
+        <CharacterPanel
+          character={character}
+          activeQuest={activeQuest}
+          currentLocation={currentLocation}
+        />
         <section className="min-w-0">
-          <div className="mythoria-panel min-h-[420px] space-y-5 p-5 sm:p-7">
+          <div className="mythoria-panel h-[clamp(360px,58vh,660px)] space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
             {messages.map((message) => (
               <article
                 key={message.id}
                 className={
                   message.role === "user"
-                    ? "ml-auto max-w-[88%] rounded-2xl border border-[var(--mythoria-border)] bg-[var(--mythoria-green-dark)]/20 p-4"
-                    : "max-w-[95%] rounded-2xl border border-[var(--mythoria-border-gold)] bg-[var(--mythoria-surface)] p-5"
+                    ? "ml-auto max-w-[88%] rounded-xl border border-[var(--mythoria-border)] bg-[var(--mythoria-green-dark)]/20 p-3"
+                    : "max-w-[95%] rounded-xl border border-[var(--mythoria-border-gold)] bg-[var(--mythoria-surface)] p-4"
                 }
               >
                 <p className="text-xs font-bold tracking-wide text-[var(--mythoria-gold-light)]">
@@ -283,6 +337,16 @@ export default function AdventurePage() {
               </article>
             ))}
           </div>
+          <AdventureNarrator
+            text={narration?.content ?? ""}
+            narrationId={narration?.id ?? ""}
+          />
+          <AdventureLiveTools
+            boardSlug={currentLocation?.slug}
+            onUseRoll={(result) =>
+              setInput((current) => (current.trim() ? `${current}\n${result}` : result))
+            }
+          />
           {choices.length > 0 && (
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
               {choices.map((choice) => (
@@ -336,7 +400,7 @@ export default function AdventurePage() {
             </div>
           </form>
         </section>
-        <aside className="mythoria-card h-fit p-5">
+        <aside className="mythoria-card h-fit p-4 lg:col-span-2 xl:col-span-1">
           <p className="text-xs font-bold text-[var(--mythoria-gold-light)]">
             CHRONIKSTATUS
           </p>
@@ -363,14 +427,22 @@ export default function AdventurePage() {
     </main>
   );
 }
-function CharacterPanel({ character }: { character: Character }) {
+function CharacterPanel({
+  character,
+  activeQuest,
+  currentLocation,
+}: {
+  character: Character;
+  activeQuest: ActiveQuest | null;
+  currentLocation: CurrentLocation | null;
+}) {
   return (
-    <aside className="mythoria-card h-fit p-5">
-      <p className="text-xs font-bold text-[var(--mythoria-gold-light)]">
+    <aside className="mythoria-card h-fit p-3.5">
+      <p className="text-[10px] font-bold tracking-[.14em] text-[var(--mythoria-gold-light)]">
         CHARAKTER
       </p>
-      <h2 className="mt-2 text-xl">{character.name}</h2>
-      <p className="mt-1 text-sm text-[var(--mythoria-text-muted)]">
+      <h2 className="mt-1 text-lg">{character.name}</h2>
+      <p className="mt-0.5 text-xs leading-5 text-[var(--mythoria-text-muted)]">
         Stufe {character.level} · {character.race} · {character.character_class}
       </p>
       <Stat
@@ -385,12 +457,44 @@ function CharacterPanel({ character }: { character: Character }) {
         max={character.max_mana}
         color="var(--mythoria-mana)"
       />
-      <p className="mt-5 text-sm font-bold text-[var(--mythoria-gold-light)]">
+      <p className="mt-3 text-xs font-bold text-[var(--mythoria-gold-light)]">
         {character.gold} Gold
       </p>
-      <p className="mt-2 text-xs text-[var(--mythoria-text-muted)]">
+      <p className="mt-1 text-[11px] text-[var(--mythoria-text-muted)]">
         {character.experience} Erfahrung
       </p>
+      <div className="mt-3 border-t border-[var(--mythoria-border)] pt-3">
+        <p className="text-[9px] font-bold tracking-[.12em] text-[var(--mythoria-green-bright)]">
+          AKTIVE QUEST
+        </p>
+        <Link
+          href={`/dashboard/characters/${character.id}/quests`}
+          className="mt-1 block text-xs font-semibold leading-4 text-[var(--mythoria-text-secondary)] hover:text-[var(--mythoria-gold-light)]"
+        >
+          {activeQuest?.title ?? "Keine aktive Quest"}
+        </Link>
+        {activeQuest && activeQuest.progress !== null && (
+          <p className="mt-1 text-[10px] text-[var(--mythoria-text-muted)]">
+            Fortschritt: {Math.max(0, Math.min(100, activeQuest.progress))}%
+          </p>
+        )}
+      </div>
+      <div className="mt-3 border-t border-[var(--mythoria-border)] pt-3">
+        <p className="text-[9px] font-bold tracking-[.12em] text-[var(--mythoria-green-bright)]">
+          AKTUELLE WELT
+        </p>
+        <Link
+          href="/dashboard/world"
+          className="mt-1 block text-xs font-semibold leading-4 text-[var(--mythoria-text-secondary)] hover:text-[var(--mythoria-gold-light)]"
+        >
+          {currentLocation?.name ?? "Noch kein Aufenthaltsort"}
+        </Link>
+        {currentLocation && (
+          <p className="mt-1 text-[10px] leading-4 text-[var(--mythoria-text-muted)]">
+            {currentLocation.region}
+          </p>
+        )}
+      </div>
     </aside>
   );
 }
@@ -407,14 +511,14 @@ function Stat({
 }) {
   const safe = Math.max(max, 1);
   return (
-    <div className="mt-5">
-      <div className="flex justify-between text-xs">
+    <div className="mt-3">
+      <div className="flex justify-between text-[11px]">
         <span>{label}</span>
         <span>
           {value}/{safe}
         </span>
       </div>
-      <div className="mythoria-stat-bar mt-2">
+      <div className="mythoria-stat-bar mt-1.5 h-1.5">
         <div
           className="h-full rounded-full"
           style={{
@@ -436,6 +540,14 @@ function lastChoices(messages: Message[]) {
       );
   }
   return [];
+}
+function latestNarration(messages: Message[]) {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === "assistant" || messages[i].role === "npc") {
+      return messages[i];
+    }
+  }
+  return null;
 }
 function AdventureEffects({ data }: { data: unknown }) {
   if (!isRecord(data)) return null;

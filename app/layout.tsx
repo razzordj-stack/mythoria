@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cinzel, Inter } from "next/font/google";
 import "./globals.css";
+import { LegalFooter } from "@/components/legal/LegalFooter";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="de" className={`${inter.variable} ${cinzel.variable}`}>
-      <body>{children}</body>
+      <body>{children}<LegalFooter /></body>
     </html>
   );
 }

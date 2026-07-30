@@ -256,7 +256,7 @@ export default function CharactersPage() {
     );
 
     return (
-        <main className="relative min-h-screen overflow-hidden bg-[#020403] text-white">
+        <main className="mythoria-page relative min-h-screen overflow-hidden text-white">
             <BackgroundEffects />
 
             <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -352,7 +352,7 @@ function PageHeader({
     isLoading,
 }: PageHeaderProps) {
     return (
-        <header className="mb-8 flex flex-col gap-5 rounded-3xl border border-lime-400/20 bg-[var(--mythoria-surface)]/90 p-5 shadow-2xl shadow-green-950/20 backdrop-blur-xl sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+        <header className="mythoria-page-header mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-4">
                 <Link
                     href="/dashboard"

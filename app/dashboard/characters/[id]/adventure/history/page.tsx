@@ -94,7 +94,7 @@ export default function AdventureHistoryPage() {
     );
   return (
     <main className="mythoria-page mx-auto max-w-6xl px-4 py-8">
-      <header className="mythoria-panel flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+      <header className="mythoria-page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-bold tracking-[.18em] text-[var(--mythoria-green-bright)]">
             ARCHIV

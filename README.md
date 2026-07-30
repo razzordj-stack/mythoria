@@ -36,8 +36,10 @@ Migrationen liegen unter `supabase/migrations`. Das Projekt ist mit Supabase-Pro
 - `PROJECT_ROUTES.md`: vorhandene Routen und Funktionsstatus
 - `.env.example`: benötigte Umgebungsvariablen ohne Geheimnisse
 - `DEPLOYMENT.md`: Produktionsvariablen, Supabase-Redirects, Release und Betrieb
+- `ROADMAP.md`: aktueller Fortschritt, offene Blocker und nächste Entwicklungsphasen
 
-Die KI-Spielleiter-Anbindung ist vorbereitet, bleibt aber bis zur Auswahl eines zuverlässigen Modells zurückgestellt.
+Die KI-Spielleiter-Anbindung verwendet bevorzugt die OpenAI Responses API mit `gpt-5.6-terra`. OpenRouter bleibt als optionaler Fallback vorbereitet.
+Neue Chronikszenen können auf der Abenteuerseite mit einer deutschen Browserstimme vorgelesen oder automatisch nach ihrer Erstellung gestartet werden.
 
 ## Sicherheit
 

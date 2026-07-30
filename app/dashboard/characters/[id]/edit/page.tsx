@@ -245,11 +245,11 @@ export default function EditCharacterPage() {
     }
 
     return (
-        <main className="relative min-h-screen overflow-hidden bg-[#020403] text-white">
+        <main className="mythoria-page relative min-h-screen overflow-hidden text-white">
             <BackgroundEffects />
 
             <div className="relative z-10 mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
-                <header className="mb-8 flex flex-col gap-4 rounded-3xl border border-lime-400/20 bg-[var(--mythoria-surface)]/90 p-5 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
+                <header className="mythoria-page-header mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p className="text-xs font-bold uppercase tracking-[0.3em] text-lime-200">
                             Charaktereditor

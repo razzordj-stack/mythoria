@@ -13,8 +13,8 @@ Bei einem bestehenden Projekt wird alternativ auch der ältere Name `NEXT_PUBLIC
 
 Optional und bis zur letzten KI-Phase nicht erforderlich:
 
-- `OPENROUTER_API_KEY` und `OPENROUTER_MODEL`
-- alternativ `OPENAI_API_KEY` und `OPENAI_MODEL`
+- `OPENAI_API_KEY` und `OPENAI_MODEL` (bevorzugt)
+- alternativ `OPENROUTER_API_KEY` und `OPENROUTER_MODEL`
 
 Geheimnisse dürfen niemals als `NEXT_PUBLIC_*` gespeichert oder in das Repository eingecheckt werden. Die beiden Supabase-Werte sind absichtlich öffentlich nutzbare Projektwerte; der Service-Role-Key wird von der Anwendung nicht benötigt.
 

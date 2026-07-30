@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MythoriaAlert } from "@/components/ui/MythoriaAlert";
@@ -142,7 +143,10 @@ export default function WorldPage() {
       </main>
     );
   return (
-    <main className="mythoria-page mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-10">
+    <main
+      className="mythoria-page mythoria-world-context mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-10"
+      data-danger={selected?.danger_level ?? 0}
+    >
       <MythoriaPageHeader
         eyebrow="WELTLEXIKON"
         title="Die Reiche Mythorias"
@@ -301,6 +305,7 @@ export default function WorldPage() {
                     ? "Reise wird vorbereitet …"
                     : "Hierher reisen"}
               </button>
+              <Link href={`/dashboard/world/${selected.slug}/board`} className="mythoria-button-secondary">Live-Spielbrett öffnen</Link>
             </div>
           </article>
         </div>

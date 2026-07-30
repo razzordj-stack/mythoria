@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isUuid, parseAdventureResponse } from "./route";
+import {
+  isUuid,
+  parseAdventureResponse,
+  providerErrorMessage,
+} from "./route";
 
 const questId = "123e4567-e89b-42d3-a456-426614174000";
 
@@ -103,5 +107,22 @@ describe("isUuid", () => {
   it("unterscheidet gültige UUIDs von beliebigem Text", () => {
     expect(isUuid(questId)).toBe(true);
     expect(isUuid("../../../fremde-datei")).toBe(false);
+  });
+});
+
+describe("providerErrorMessage", () => {
+  it("erklärt fehlendes OpenAI-Guthaben verständlich", () => {
+    expect(
+      providerErrorMessage(
+        "openai",
+        "You have no credits remaining (credit_balance_exhausted).",
+      ),
+    ).toContain("Guthaben");
+  });
+
+  it("gibt für unbekannte Providerfehler keine internen Details aus", () => {
+    expect(providerErrorMessage("openai", "interner Providerfehler")).toBe(
+      "Der KI-Spielleiter ist gerade nicht erreichbar. Deine Handlung wurde nicht gespeichert.",
+    );
   });
 });

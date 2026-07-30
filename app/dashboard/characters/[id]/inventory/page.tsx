@@ -1,16 +1,349 @@
 "use client";
-import Link from "next/link";import {useParams} from "next/navigation";import {useCallback,useEffect,useMemo,useState} from "react";import {createClient} from "@/lib/supabase/client";import {EQUIPMENT_SLOTS,ITEM_TYPES,RARITIES,label,type InventoryItem} from "@/lib/inventory";
-type Character={id:string;user_id:string;name:string;race:string;character_class:string};
-const rarityClass:Record<string,string>={common:"border-slate-400/20",uncommon:"border-emerald-400/40",rare:"border-blue-400/40",epic:"border-lime-400/40",legendary:"border-amber-400/50",mythic:"border-red-400/60"};
-export default function InventoryPage(){const{id}=useParams<{id:string}>();const supabase=useMemo(()=>createClient(),[]);const[character,setCharacter]=useState<Character|null>(null);const[items,setItems]=useState<InventoryItem[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState("");const[busy,setBusy]=useState<string|null>(null);const[search,setSearch]=useState("");const[type,setType]=useState("");const[sort,setSort]=useState("new");
- const load=useCallback(async()=>{setLoading(true);setError("");const{data:{user},error:ue}=await supabase.auth.getUser();if(ue||!user){setError("Du bist nicht angemeldet.");setLoading(false);return}const{data:c,error:ce}=await supabase.from("characters").select("id,user_id,name,race,character_class").eq("id",id).eq("user_id",user.id).maybeSingle().overrideTypes<Character|null,{merge:false}>();if(ce||!c){setError(ce?.message??"Charakter nicht gefunden.");setLoading(false);return}const{data,error:ie}=await supabase.from("inventory_items").select("*").eq("character_id",c.id).eq("user_id",user.id).order("created_at",{ascending:false}).overrideTypes<InventoryItem[],{merge:false}>();if(ie)setError(ie.message);else{setCharacter(c);setItems(data??[])}setLoading(false)},[id,supabase]);useEffect(()=>{const timer=window.setTimeout(()=>void load(),0);return()=>window.clearTimeout(timer)},[load]);
- async function toggle(item:InventoryItem){setBusy(item.id);setError("");const{error:e}=await supabase.rpc("set_inventory_item_equipped",{p_item_id:item.id,p_equipped:!item.is_equipped});if(e)setError(e.message);else await load();setBusy(null)}
- async function remove(item:InventoryItem){if(!confirm('„'+item.name+'“ wirklich dauerhaft löschen?'))return;setBusy(item.id);const{data:{user}}=await supabase.auth.getUser();if(!user){setError("Sitzung abgelaufen.");setBusy(null);return}const{error:e}=await supabase.from("inventory_items").delete().eq("id",item.id).eq("character_id",id).eq("user_id",user.id);if(e)setError(e.message);else setItems(old=>old.filter(x=>x.id!==item.id));setBusy(null)}
- const visible=useMemo(()=>items.filter(x=>(!type||x.item_type===type)&&x.name.toLowerCase().includes(search.trim().toLowerCase())).sort((a,b)=>sort==="name"?a.name.localeCompare(b.name,"de"):sort==="value"?b.value-a.value:new Date(b.created_at).getTime()-new Date(a.created_at).getTime()),[items,search,type,sort]);
- const equipped=items.filter(x=>x.is_equipped);const totals=equipped.reduce((a,x)=>({attack:a.attack+x.attack_bonus,defense:a.defense+x.defense_bonus,magic:a.magic+x.magic_bonus,health:a.health+x.health_bonus,mana:a.mana+x.mana_bonus}),{attack:0,defense:0,magic:0,health:0,mana:0});
- if(loading)return <main className="min-h-screen p-10 text-white">Inventar wird geladen …</main>;if(!character)return <State text={error||"Charakter nicht gefunden."}/>;
- return <main className="mx-auto min-h-screen max-w-7xl px-4 py-8 text-white"><header className="flex flex-col gap-4 rounded-3xl border border-lime-400/20 bg-[var(--mythoria-surface)]/90 p-6 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[.3em] text-lime-200">Inventar</p><h1 className="mt-2 text-3xl font-black">{character.name}</h1><p className="mt-1 text-[var(--mythoria-text-muted)]">{items.length} Gegenstände · {equipped.length} ausgerüstet</p></div><div className="flex gap-3"><Link href={"/dashboard/characters/"+id} className="rounded-xl border border-[var(--mythoria-border)] px-5 py-3">Charakter</Link><Link href={"/dashboard/characters/"+id+"/inventory/new"} className="rounded-xl bg-green-700 px-5 py-3 font-black">+ Gegenstand</Link></div></header>
- <section className="mt-6 grid gap-3 sm:grid-cols-5">{Object.entries(totals).map(([k,v])=><div key={k} className="rounded-2xl border border-[var(--mythoria-border)] bg-black/20 p-4"><p className="text-xs uppercase text-[var(--mythoria-text-disabled)]">{{attack:"Angriff",defense:"Verteidigung",magic:"Magie",health:"Leben",mana:"Mana"}[k]}</p><p className="mt-1 text-xl font-black text-lime-100">+{v}</p></div>)}</section>
- <section className="mt-6 grid gap-3 rounded-2xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/70 p-4 md:grid-cols-3"><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Gegenstände suchen …" className="rounded-xl border border-[var(--mythoria-border)] bg-black/30 px-4 py-3"/><select value={type} onChange={e=>setType(e.target.value)} className="rounded-xl border border-[var(--mythoria-border)] bg-black/30 px-4 py-3"><option value="">Alle Typen</option>{ITEM_TYPES.map(([x,l])=><option key={x} value={x}>{l}</option>)}</select><select value={sort} onChange={e=>setSort(e.target.value)} className="rounded-xl border border-[var(--mythoria-border)] bg-black/30 px-4 py-3"><option value="new">Neueste zuerst</option><option value="name">Name</option><option value="value">Goldwert</option></select></section>
- {error&&<p role="alert" className="mt-5 rounded-xl bg-red-500/10 p-4 text-red-200">{error}</p>}{visible.length===0?<section className="mt-7 rounded-3xl border border-dashed border-lime-400/30 p-16 text-center text-[var(--mythoria-text-muted)]">Keine passenden Gegenstände gefunden.</section>:<section className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">{visible.map(item=><article key={item.id} className={"rounded-3xl border bg-[var(--mythoria-surface)]/90 p-5 "+(rarityClass[item.rarity]??rarityClass.common)}><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wider text-lime-200">{label(RARITIES,item.rarity)}</p><h2 className="mt-2 text-xl font-black">{item.name}</h2></div>{item.is_equipped&&<span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs text-emerald-200">Ausgerüstet</span>}</div><p className="mt-2 text-sm text-[var(--mythoria-text-muted)]">{label(ITEM_TYPES,item.item_type)} · Menge {item.quantity}{item.equipment_slot?" · "+label(EQUIPMENT_SLOTS,item.equipment_slot):""}</p><p className="mt-4 min-h-12 text-sm leading-6 text-[var(--mythoria-text-muted)]">{item.description||"Keine Beschreibung."}</p><div className="mt-4 flex flex-wrap gap-2 text-xs">{[["ANG",item.attack_bonus],["VER",item.defense_bonus],["MAG",item.magic_bonus],["LP",item.health_bonus],["MP",item.mana_bonus]].filter(([,v])=>Number(v)>0).map(([k,v])=><span key={String(k)} className="rounded-lg bg-black/30 px-2 py-1">+{v} {k}</span>)}<span className="rounded-lg bg-amber-500/10 px-2 py-1 text-amber-200">{item.value} Gold</span></div><div className="mt-5 grid grid-cols-3 gap-2"><button onClick={()=>void toggle(item)} disabled={busy===item.id||(!item.is_equipped&&!item.equipment_slot)} title={!item.equipment_slot?"Zum Ausrüsten zuerst einen Slot festlegen":undefined} className="rounded-xl bg-emerald-500/10 px-2 py-3 text-sm font-bold text-emerald-200 disabled:opacity-40">{item.is_equipped?"Ablegen":"Ausrüsten"}</button><Link href={"/dashboard/characters/"+id+"/inventory/"+item.id+"/edit"} className="rounded-xl border border-[var(--mythoria-border)] px-2 py-3 text-center text-sm font-bold">Bearbeiten</Link><button onClick={()=>void remove(item)} disabled={busy===item.id} className="rounded-xl bg-red-500/10 px-2 py-3 text-sm font-bold text-red-200">Löschen</button></div></article>)}</section>}</main>}
-function State({text}:{text:string}){return <main className="flex min-h-screen items-center justify-center px-4 text-white"><section className="rounded-3xl border border-[var(--mythoria-border)] p-8 text-center"><h1 className="text-2xl font-black">Inventar nicht verfügbar</h1><p className="mt-3 text-[var(--mythoria-text-muted)]">{text}</p><Link href="/dashboard/characters" className="mt-6 inline-flex rounded-xl bg-green-700 px-5 py-3">Zur Übersicht</Link></section></main>}
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import {
+  EQUIPMENT_SLOTS,
+  ITEM_TYPES,
+  RARITIES,
+  label,
+  type InventoryItem,
+} from "@/lib/inventory";
+type Character = {
+  id: string;
+  user_id: string;
+  name: string;
+  race: string;
+  character_class: string;
+};
+const rarityClass: Record<string, string> = {
+  common: "border-slate-400/20",
+  uncommon: "border-emerald-400/40",
+  rare: "border-blue-400/40",
+  epic: "border-lime-400/40",
+  legendary: "border-amber-400/50",
+  mythic: "border-red-400/60",
+};
+export default function InventoryPage() {
+  const { id } = useParams<{ id: string }>();
+  const supabase = useMemo(() => createClient(), []);
+  const [character, setCharacter] = useState<Character | null>(null);
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [type, setType] = useState("");
+  const [sort, setSort] = useState("new");
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    const {
+      data: { user },
+      error: ue,
+    } = await supabase.auth.getUser();
+    if (ue || !user) {
+      setError("Du bist nicht angemeldet.");
+      setLoading(false);
+      return;
+    }
+    const { data: c, error: ce } = await supabase
+      .from("characters")
+      .select("id,user_id,name,race,character_class")
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .overrideTypes<Character | null, { merge: false }>();
+    if (ce || !c) {
+      setError(ce?.message ?? "Charakter nicht gefunden.");
+      setLoading(false);
+      return;
+    }
+    const { data, error: ie } = await supabase
+      .from("inventory_items")
+      .select("*")
+      .eq("character_id", c.id)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .overrideTypes<InventoryItem[], { merge: false }>();
+    if (ie) setError(ie.message);
+    else {
+      setCharacter(c);
+      setItems(data ?? []);
+    }
+    setLoading(false);
+  }, [id, supabase]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+  async function toggle(item: InventoryItem) {
+    setBusy(item.id);
+    setError("");
+    const { error: e } = await supabase.rpc("set_inventory_item_equipped", {
+      p_item_id: item.id,
+      p_equipped: !item.is_equipped,
+    });
+    if (e) setError(e.message);
+    else await load();
+    setBusy(null);
+  }
+  async function remove(item: InventoryItem) {
+    if (!confirm("„" + item.name + "“ wirklich dauerhaft löschen?")) return;
+    setBusy(item.id);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setError("Sitzung abgelaufen.");
+      setBusy(null);
+      return;
+    }
+    const { error: e } = await supabase
+      .from("inventory_items")
+      .delete()
+      .eq("id", item.id)
+      .eq("character_id", id)
+      .eq("user_id", user.id);
+    if (e) setError(e.message);
+    else setItems((old) => old.filter((x) => x.id !== item.id));
+    setBusy(null);
+  }
+  const visible = useMemo(
+    () =>
+      items
+        .filter(
+          (x) =>
+            (!type || x.item_type === type) &&
+            x.name.toLowerCase().includes(search.trim().toLowerCase()),
+        )
+        .sort((a, b) =>
+          sort === "name"
+            ? a.name.localeCompare(b.name, "de")
+            : sort === "value"
+              ? b.value - a.value
+              : new Date(b.created_at).getTime() -
+                new Date(a.created_at).getTime(),
+        ),
+    [items, search, type, sort],
+  );
+  const equipped = items.filter((x) => x.is_equipped);
+  const totals = equipped.reduce(
+    (a, x) => ({
+      attack: a.attack + x.attack_bonus,
+      defense: a.defense + x.defense_bonus,
+      magic: a.magic + x.magic_bonus,
+      health: a.health + x.health_bonus,
+      mana: a.mana + x.mana_bonus,
+    }),
+    { attack: 0, defense: 0, magic: 0, health: 0, mana: 0 },
+  );
+  if (loading)
+    return (
+      <main className="min-h-screen p-10 text-white">
+        Inventar wird geladen …
+      </main>
+    );
+  if (!character) return <State text={error || "Charakter nicht gefunden."} />;
+  return (
+    <main className="mythoria-page mx-auto min-h-screen max-w-7xl px-4 py-8 text-white">
+      <header className="mythoria-page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[.3em] text-lime-200">
+            Inventar
+          </p>
+          <h1 className="mt-2 text-3xl font-black">{character.name}</h1>
+          <p className="mt-1 text-[var(--mythoria-text-muted)]">
+            {items.length} Gegenstände · {equipped.length} ausgerüstet
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Link
+            href={"/dashboard/characters/" + id}
+            className="rounded-xl border border-[var(--mythoria-border)] px-5 py-3"
+          >
+            Charakter
+          </Link>
+          <Link
+            href={"/dashboard/characters/" + id + "/inventory/new"}
+            className="rounded-xl bg-green-700 px-5 py-3 font-black"
+          >
+            + Gegenstand
+          </Link>
+        </div>
+      </header>
+      <section className="mt-6 grid gap-3 sm:grid-cols-5">
+        {Object.entries(totals).map(([k, v]) => (
+          <div
+            key={k}
+            className="rounded-2xl border border-[var(--mythoria-border)] bg-black/20 p-4"
+          >
+            <p className="text-xs uppercase text-[var(--mythoria-text-disabled)]">
+              {
+                {
+                  attack: "Angriff",
+                  defense: "Verteidigung",
+                  magic: "Magie",
+                  health: "Leben",
+                  mana: "Mana",
+                }[k]
+              }
+            </p>
+            <p className="mt-1 text-xl font-black text-lime-100">+{v}</p>
+          </div>
+        ))}
+      </section>
+      <section className="mt-6 grid gap-3 rounded-2xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/70 p-4 md:grid-cols-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Gegenstände suchen …"
+          className="rounded-xl border border-[var(--mythoria-border)] bg-black/30 px-4 py-3"
+        />
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="rounded-xl border border-[var(--mythoria-border)] bg-black/30 px-4 py-3"
+        >
+          <option value="">Alle Typen</option>
+          {ITEM_TYPES.map(([x, l]) => (
+            <option key={x} value={x}>
+              {l}
+            </option>
+          ))}
+        </select>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          className="rounded-xl border border-[var(--mythoria-border)] bg-black/30 px-4 py-3"
+        >
+          <option value="new">Neueste zuerst</option>
+          <option value="name">Name</option>
+          <option value="value">Goldwert</option>
+        </select>
+      </section>
+      {error && (
+        <p
+          role="alert"
+          className="mt-5 rounded-xl bg-red-500/10 p-4 text-red-200"
+        >
+          {error}
+        </p>
+      )}
+      {visible.length === 0 ? (
+        <section className="mt-7 rounded-3xl border border-dashed border-lime-400/30 p-16 text-center text-[var(--mythoria-text-muted)]">
+          Keine passenden Gegenstände gefunden.
+        </section>
+      ) : (
+        <section className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {visible.map((item) => (
+            <article
+              key={item.id}
+              className={
+                "rounded-3xl border bg-[var(--mythoria-surface)]/90 p-5 " +
+                (rarityClass[item.rarity] ?? rarityClass.common)
+              }
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wider text-lime-200">
+                    {label(RARITIES, item.rarity)}
+                  </p>
+                  <h2 className="mt-2 text-xl font-black">{item.name}</h2>
+                </div>
+                {item.is_equipped && (
+                  <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs text-emerald-200">
+                    Ausgerüstet
+                  </span>
+                )}
+              </div>
+              <p className="mt-2 text-sm text-[var(--mythoria-text-muted)]">
+                {label(ITEM_TYPES, item.item_type)} · Menge {item.quantity}
+                {item.equipment_slot
+                  ? " · " + label(EQUIPMENT_SLOTS, item.equipment_slot)
+                  : ""}
+              </p>
+              <p className="mt-4 min-h-12 text-sm leading-6 text-[var(--mythoria-text-muted)]">
+                {item.description || "Keine Beschreibung."}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                {[
+                  ["ANG", item.attack_bonus],
+                  ["VER", item.defense_bonus],
+                  ["MAG", item.magic_bonus],
+                  ["LP", item.health_bonus],
+                  ["MP", item.mana_bonus],
+                ]
+                  .filter(([, v]) => Number(v) > 0)
+                  .map(([k, v]) => (
+                    <span
+                      key={String(k)}
+                      className="rounded-lg bg-black/30 px-2 py-1"
+                    >
+                      +{v} {k}
+                    </span>
+                  ))}
+                <span className="rounded-lg bg-amber-500/10 px-2 py-1 text-amber-200">
+                  {item.value} Gold
+                </span>
+              </div>
+              <div className="mt-5 grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => void toggle(item)}
+                  disabled={
+                    busy === item.id ||
+                    (!item.is_equipped && !item.equipment_slot)
+                  }
+                  title={
+                    !item.equipment_slot
+                      ? "Zum Ausrüsten zuerst einen Slot festlegen"
+                      : undefined
+                  }
+                  className="rounded-xl bg-emerald-500/10 px-2 py-3 text-sm font-bold text-emerald-200 disabled:opacity-40"
+                >
+                  {item.is_equipped ? "Ablegen" : "Ausrüsten"}
+                </button>
+                <Link
+                  href={
+                    "/dashboard/characters/" +
+                    id +
+                    "/inventory/" +
+                    item.id +
+                    "/edit"
+                  }
+                  className="rounded-xl border border-[var(--mythoria-border)] px-2 py-3 text-center text-sm font-bold"
+                >
+                  Bearbeiten
+                </Link>
+                <button
+                  onClick={() => void remove(item)}
+                  disabled={busy === item.id}
+                  className="rounded-xl bg-red-500/10 px-2 py-3 text-sm font-bold text-red-200"
+                >
+                  Löschen
+                </button>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+    </main>
+  );
+}
+function State({ text }: { text: string }) {
+  return (
+    <main className="flex min-h-screen items-center justify-center px-4 text-white">
+      <section className="rounded-3xl border border-[var(--mythoria-border)] p-8 text-center">
+        <h1 className="text-2xl font-black">Inventar nicht verfügbar</h1>
+        <p className="mt-3 text-[var(--mythoria-text-muted)]">{text}</p>
+        <Link
+          href="/dashboard/characters"
+          className="mt-6 inline-flex rounded-xl bg-green-700 px-5 py-3"
+        >
+          Zur Übersicht
+        </Link>
+      </section>
+    </main>
+  );
+}

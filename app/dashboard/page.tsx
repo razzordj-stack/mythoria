@@ -322,7 +322,9 @@ export default function CharactersPage() {
                 ) : characters.length === 0 ? (
                     <EmptyState />
                 ) : (
-                    <section>
+                    <>
+                    <CommandCenter character={characters[0]} />
+                    <section className="mt-8">
                         <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                             <div>
                                 <p className="text-xs font-bold uppercase tracking-[0.3em] text-lime-200">
@@ -342,7 +344,7 @@ export default function CharactersPage() {
                             </p>
                         </div>
 
-                        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                        <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
                             {characters.map((character) => (
                                 <CharacterCard
                                     key={character.id}
@@ -364,6 +366,7 @@ export default function CharactersPage() {
                             <CreateCharacterCard />
                         </div>
                     </section>
+                    </>
                 )}
             </div>
         </main>
@@ -375,44 +378,86 @@ type PageHeaderProps = {
     onRefresh: () => void;
 };
 
+function CommandCenter({ character }: { character: Character }) {
+    const normalizedClass = character.character_class.toLowerCase();
+    const normalizedRace = character.race.toLowerCase();
+    const icon = classIcons[normalizedClass] ?? raceIcons[normalizedRace] ?? "✦";
+    const characterHref = `/dashboard/characters/${character.id}`;
+
+    return (
+        <section aria-labelledby="continue-title" className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(280px,.7fr)]">
+            <article className="mythoria-panel relative overflow-hidden p-5 sm:p-6">
+                <div aria-hidden="true" className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_right,rgba(147,182,64,.16),transparent_66%)]" />
+                <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
+                    <CharacterAvatar name={character.name} icon={icon} className="shrink-0" />
+                    <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-bold tracking-[.2em] text-[var(--mythoria-green-bright)]">ABENTEUER FORTSETZEN</p>
+                        <h2 id="continue-title" className="mt-1 truncate text-2xl">{character.name}</h2>
+                        <p className="mt-1 text-sm text-[var(--mythoria-text-muted)]">
+                            Stufe {Math.max(character.level, 1)} · {formatValue(character.race)} · {formatValue(character.character_class)}
+                        </p>
+                        <p className="mt-3 line-clamp-2 max-w-2xl text-sm leading-6 text-[var(--mythoria-text-secondary)]">
+                            {character.background?.trim() || "Die nächste Seite dieser Chronik wartet darauf, geschrieben zu werden."}
+                        </p>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <Link href={`${characterHref}/adventure`} className="mythoria-button-primary">Chronik fortsetzen</Link>
+                            <Link href={characterHref} className="mythoria-button-secondary">Charakter öffnen</Link>
+                        </div>
+                    </div>
+                </div>
+            </article>
+            <nav aria-label="Schnellzugriffe" className="mythoria-card p-4">
+                <p className="px-1 text-[10px] font-bold tracking-[.2em] text-[var(--mythoria-gold-light)]">SCHNELLZUGRIFFE</p>
+                <div className="mt-3 grid grid-cols-2 gap-2 xl:grid-cols-1">
+                    <QuickLink href={`${characterHref}/quests`} icon="◇" label="Aktive Quests" />
+                    <QuickLink href={`${characterHref}/inventory`} icon="▣" label="Inventar" />
+                    <QuickLink href="/dashboard/world" icon="⌖" label="Weltkarte" />
+                    <QuickLink href="/dashboard/notifications" icon="✦" label="Meldungen" />
+                </div>
+            </nav>
+        </section>
+    );
+}
+
+function QuickLink({ href, icon, label }: { href: string; icon: string; label: string }) {
+    return (
+        <Link href={href} className="flex min-h-11 items-center gap-3 rounded-xl border border-[var(--mythoria-border)] bg-black/15 px-3 text-sm font-semibold text-[var(--mythoria-text-secondary)] transition hover:border-[var(--mythoria-border-gold)] hover:bg-[var(--mythoria-panel-hover)] hover:text-[var(--mythoria-gold-light)]">
+            <span aria-hidden="true" className="w-5 text-center text-[var(--mythoria-green-bright)]">{icon}</span>
+            {label}
+        </Link>
+    );
+}
+
 function PageHeader({
     isLoading,
     onRefresh,
 }: PageHeaderProps) {
     return (
-        <header className="mb-8 flex flex-col gap-5 rounded-3xl border border-lime-400/20 bg-[var(--mythoria-surface)]/90 p-5 shadow-2xl shadow-green-950/20 backdrop-blur-xl sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+        <header className="mythoria-page-header mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-4">
-                <Link
-                    href="/dashboard"
-                    aria-label="Zurück zum Dashboard"
-                    className="flex h-11 min-w-11 items-center justify-center rounded-xl border border-[var(--mythoria-border)] bg-white/5 text-xl transition hover:border-lime-400/40 hover:bg-lime-500/10"
-                >
-                    ←
-                </Link>
+                <span className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--mythoria-border-gold)] bg-[var(--mythoria-green-dark)]/30 text-[var(--mythoria-neon-soft)]">✦</span>
 
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-lime-200">
-                        Mythoria
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--mythoria-green-bright)]">
+                        Kommandozentrale
                     </p>
 
                     <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
-                        Meine Charaktere
+                        Deine Chroniken
                     </h1>
 
-                    <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--mythoria-text-muted)]">
-                        Verwalte deine Helden, erkunde ihre
-                        Geschichten und führe sie tiefer in die
-                        Welt von Mythoria.
+                    <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--mythoria-text-muted)]">
+                        Setze ein Abenteuer fort oder verwalte deine Helden und Fortschritte.
                     </p>
                 </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-wrap gap-2">
                 <button
                     type="button"
                     onClick={onRefresh}
                     disabled={isLoading}
-                    className="rounded-xl border border-[var(--mythoria-border)] bg-white/5 px-5 py-3 text-sm font-semibold text-[var(--mythoria-text)] transition hover:border-lime-400/40 hover:bg-lime-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mythoria-button-secondary"
                 >
                     {isLoading
                         ? "Wird geladen ..."
@@ -421,7 +466,7 @@ function PageHeader({
 
                 <Link
                     href="/dashboard/characters/new"
-                    className="rounded-xl bg-gradient-to-r from-green-700 via-amber-700 to-green-800 px-6 py-3 text-center text-sm font-black text-white shadow-lg shadow-green-950/50 transition hover:scale-[1.01] hover:brightness-110"
+                    className="mythoria-button-primary"
                 >
                     + Neuer Charakter
                 </Link>
@@ -442,7 +487,7 @@ function Statistics({
     totalExperience,
 }: StatisticsProps) {
     return (
-        <section className="mb-8 grid gap-4 sm:grid-cols-3">
+        <section aria-label="Chronikstatus" className="mb-5 grid gap-3 sm:grid-cols-3">
             <StatisticCard
                 icon="🧙"
                 label="Charaktere"
@@ -480,9 +525,9 @@ function StatisticCard({
     value,
 }: StatisticCardProps) {
     return (
-        <div className="rounded-2xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90 p-5 backdrop-blur-xl">
-            <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-lime-400/20 bg-lime-500/10 text-2xl">
+        <div className="mythoria-card p-4">
+            <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-lime-400/20 bg-lime-500/10 text-lg">
                     {icon}
                 </span>
 
@@ -491,7 +536,7 @@ function StatisticCard({
                         {label}
                     </p>
 
-                    <p className="mt-1 text-2xl font-black text-white">
+                    <p className="mt-0.5 text-xl font-black text-white">
                         {value}
                     </p>
                 </div>
@@ -552,8 +597,8 @@ function CharacterCard({
     );
 
     return (
-        <article className="group overflow-hidden rounded-3xl border border-[var(--mythoria-border)] bg-[#0b0e08]/90 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-lime-400/40 hover:shadow-green-950/40">
-            <div className="relative flex min-h-56 items-center justify-center overflow-hidden border-b border-[var(--mythoria-border)] bg-gradient-to-br from-green-950 via-[#1a1f10] to-black">
+        <article className="group overflow-hidden rounded-2xl border border-[var(--mythoria-border)] bg-[#0b0e08]/90 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-lime-400/40 hover:shadow-green-950/40">
+            <div className="relative flex min-h-40 items-center justify-center overflow-hidden border-b border-[var(--mythoria-border)] bg-gradient-to-br from-green-950 via-[#1a1f10] to-black">
                 <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-lime-500/20 blur-3xl" />
 
                 <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-amber-500/10 blur-3xl" />
@@ -565,18 +610,18 @@ function CharacterCard({
                         className="mx-auto transition group-hover:scale-105"
                     />
 
-                    <span className="mt-4 inline-block rounded-full border border-[var(--mythoria-border)] bg-black/40 px-4 py-1 text-xs font-black uppercase tracking-[0.2em] text-lime-100">
+                    <span className="mt-2 inline-block rounded-full border border-[var(--mythoria-border)] bg-black/40 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-lime-100">
                         Stufe {level}
                     </span>
                 </div>
             </div>
 
-            <div className="p-6">
+            <div className="p-5">
                 <p className="text-xs font-bold uppercase tracking-[0.25em] text-lime-400">
                     {raceLabel}
                 </p>
 
-                <h2 className="mt-2 break-words text-2xl font-black text-white">
+                <h2 className="mt-1 break-words text-xl font-black text-white">
                     {character.name}
                 </h2>
 
@@ -584,12 +629,12 @@ function CharacterCard({
                     {classLabel}
                 </p>
 
-                <p className="mt-4 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-[var(--mythoria-text-muted)]">
+                <p className="mt-3 line-clamp-2 min-h-12 text-sm leading-6 text-[var(--mythoria-text-muted)]">
                     {character.background?.trim() ||
                         "Die Geschichte dieses Charakters wurde noch nicht niedergeschrieben."}
                 </p>
 
-                <div className="mt-5 rounded-2xl border border-[var(--mythoria-border)] bg-black/20 p-4">
+                <div className="mt-4 rounded-xl border border-[var(--mythoria-border)] bg-black/20 p-3">
                     <div className="mb-2 flex items-center justify-between gap-4">
                         <span className="text-xs font-bold uppercase tracking-wider text-[var(--mythoria-text-disabled)]">
                             Erfahrung
@@ -614,7 +659,7 @@ function CharacterCard({
                     </div>
                 </div>
 
-                <div className="mt-6 grid grid-cols-[1fr_auto] gap-3">
+                <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
                     <button
                         type="button"
                         onClick={onOpen}
@@ -643,7 +688,7 @@ function CreateCharacterCard() {
     return (
         <Link
             href="/dashboard/characters/new"
-            className="group flex min-h-[32rem] flex-col items-center justify-center rounded-3xl border border-dashed border-lime-400/30 bg-lime-500/[0.03] p-8 text-center transition hover:-translate-y-1 hover:border-lime-400/70 hover:bg-lime-500/[0.08]"
+            className="group flex min-h-[25rem] flex-col items-center justify-center rounded-2xl border border-dashed border-lime-400/30 bg-lime-500/[0.03] p-7 text-center transition hover:-translate-y-1 hover:border-lime-400/70 hover:bg-lime-500/[0.08]"
         >
             <div className="flex h-20 w-20 items-center justify-center rounded-full border border-lime-400/30 bg-lime-500/10 text-4xl text-lime-200 transition group-hover:scale-110">
                 +

@@ -10,5 +10,5 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!user) redirect("/login");
   const email = user.email ?? "Unbekannter Abenteurer";
   const displayName = typeof user.user_metadata.display_name === "string" ? user.user_metadata.display_name : undefined;
-  return <div className="mythoria-page min-h-screen lg:pl-[280px]"><PageBackground /><DashboardSidebar email={email} displayName={displayName} /><MobileNavigation email={email} displayName={displayName} /><div className="min-w-0">{children}</div></div>;
+  return <div className="mythoria-page dashboard-studio min-h-screen lg:pl-[280px]"><PageBackground /><DashboardSidebar email={email} displayName={displayName} /><MobileNavigation email={email} displayName={displayName} /><div className="dashboard-content min-w-0">{children}</div></div>;
 }

@@ -1,18 +1,334 @@
 "use client";
-import Link from "next/link";import {useParams} from "next/navigation";import {useCallback,useEffect,useMemo,useState} from "react";import {createClient} from "@/lib/supabase/client";
-type Character={id:string;user_id:string;name:string;level:number;experience:number;gold:number};
-type Quest={id:string;title:string;description:string;quest_type:string;difficulty:string;level_requirement:number;experience_reward:number;gold_reward:number;objectives:unknown;created_at:string};
-type CharacterQuest={id:string;character_id:string;quest_id:string;status:"active"|"completed"|"failed"|"abandoned";progress:unknown;started_at:string;completed_at:string|null};
-const difficulty:Record<string,string>={easy:"Leicht",normal:"Normal",hard:"Schwer",heroic:"Heroisch"};
-export default function QuestsPage(){const{id}=useParams<{id:string}>();const supabase=useMemo(()=>createClient(),[]);const[character,setCharacter]=useState<Character|null>(null);const[quests,setQuests]=useState<Quest[]>([]);const[entries,setEntries]=useState<CharacterQuest[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState("");const[busy,setBusy]=useState<string|null>(null);const[tab,setTab]=useState<"available"|"active"|"completed"|"failed">("available");
- const load=useCallback(async()=>{setLoading(true);setError("");const{data:{user}}=await supabase.auth.getUser();if(!user){setError("Du bist nicht angemeldet.");setLoading(false);return}const{data:c,error:ce}=await supabase.from("characters").select("id,user_id,name,level,experience,gold").eq("id",id).eq("user_id",user.id).maybeSingle().overrideTypes<Character|null,{merge:false}>();if(ce||!c){setError(ce?.message??"Charakter nicht gefunden.");setLoading(false);return}const[questResult,entryResult]=await Promise.all([supabase.from("quests").select("*").order("level_requirement",{ascending:true}),supabase.from("character_quests").select("*").eq("character_id",id).eq("user_id",user.id)]);if(questResult.error||entryResult.error)setError(questResult.error?.message??entryResult.error?.message??"Quests konnten nicht geladen werden.");else{setCharacter(c);setQuests(questResult.data as unknown as Quest[]);setEntries(entryResult.data as unknown as CharacterQuest[])}setLoading(false)},[id,supabase]);useEffect(()=>{const timer=window.setTimeout(()=>void load(),0);return()=>window.clearTimeout(timer)},[load]);
- const entryByQuest=useMemo(()=>new Map(entries.map(e=>[e.quest_id,e])),[entries]);const visible=quests.filter(q=>{const e=entryByQuest.get(q.id);if(tab==="available")return !e||e.status==="abandoned";return e?.status===tab});
- async function act(quest:Quest,action:"accept"|"abandon"|"complete"){setBusy(quest.id);setError("");const{error:e}=await supabase.rpc("change_character_quest",{p_character_id:id,p_quest_id:quest.id,p_action:action});if(e)setError(translate(e.message));else{await load();setTab(action==="complete"?"completed":action==="accept"?"active":"available")}setBusy(null)}
- if(loading)return <main className="min-h-screen p-10 text-white">Questbuch wird geladen …</main>;if(!character)return <State text={error||"Charakter nicht gefunden."}/>;
- return <main className="mx-auto min-h-screen max-w-6xl px-4 py-8 text-white"><header className="flex flex-col gap-4 rounded-3xl border border-lime-400/20 bg-[var(--mythoria-surface)]/90 p-6 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[.3em] text-lime-200">Questbuch</p><h1 className="mt-2 text-3xl font-black">{character.name}</h1><p className="mt-2 text-[var(--mythoria-text-muted)]">Stufe {character.level} · {character.experience} EP · {character.gold} Gold</p></div><Link href={"/dashboard/characters/"+id} className="rounded-xl border border-[var(--mythoria-border)] px-5 py-3 text-center">Zurück zum Charakter</Link></header>
- <nav className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 rounded-2xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/70 p-2">{([["available","Verfügbar"],["active","Aktiv"],["completed","Abgeschlossen"],["failed","Gescheitert"]] as const).map(([key,text])=><button key={key} onClick={()=>setTab(key)} className={"rounded-xl px-3 py-3 text-sm font-bold "+(tab===key?"bg-green-700 text-white":"text-[var(--mythoria-text-muted)] hover:bg-white/5")}>{text} ({count(key,quests,entryByQuest)})</button>)}</nav>
- {error&&<p role="alert" className="mt-5 rounded-xl bg-red-500/10 p-4 text-red-200">{error}</p>}{visible.length===0?<section className="mt-7 rounded-3xl border border-dashed border-lime-400/30 p-16 text-center text-[var(--mythoria-text-muted)]">In diesem Bereich gibt es derzeit keine Quests.</section>:<section className="mt-7 grid gap-5 md:grid-cols-2">{visible.map(q=>{const entry=entryByQuest.get(q.id);const locked=character.level<q.level_requirement;const objectives=parseObjectives(q.objectives);return <article key={q.id} className="rounded-3xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90 p-6"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wider text-amber-300">{difficulty[q.difficulty]??q.difficulty} · Stufe {q.level_requirement}</p><h2 className="mt-2 text-2xl font-black">{q.title}</h2></div>{locked&&<span className="rounded-full bg-red-500/10 px-3 py-1 text-xs text-red-200">Gesperrt</span>}</div><p className="mt-4 leading-7 text-[var(--mythoria-text-muted)]">{q.description}</p><div className="mt-5 rounded-2xl bg-black/20 p-4"><p className="text-xs font-black uppercase text-[var(--mythoria-text-disabled)]">Ziele</p><ul className="mt-3 space-y-2 text-sm text-[var(--mythoria-text-secondary)]">{objectives.map((x,i)=><li key={i}>◇ {x}</li>)}</ul></div><div className="mt-5 flex gap-4 text-sm font-bold"><span className="text-lime-100">+{q.experience_reward} EP</span><span className="text-amber-200">+{q.gold_reward} Gold</span></div><div className="mt-6 flex gap-3">{tab==="available"&&<button disabled={locked||busy===q.id} onClick={()=>void act(q,"accept")} className="flex-1 rounded-xl bg-green-700 px-4 py-3 font-black disabled:opacity-40">{locked?"Höhere Stufe benötigt":"Quest annehmen"}</button>}{tab==="active"&&<><button disabled={busy===q.id} onClick={()=>void act(q,"complete")} className="flex-1 rounded-xl bg-emerald-600 px-4 py-3 font-black disabled:opacity-40">Als erledigt markieren</button><button disabled={busy===q.id} onClick={()=>void act(q,"abandon")} className="rounded-xl bg-red-500/10 px-4 py-3 font-bold text-red-200">Abbrechen</button></>}{tab==="failed"&&<p className="w-full rounded-xl bg-red-500/10 p-3 text-center font-bold text-red-200">Quest gescheitert</p>}{tab==="completed"&&<p className="w-full rounded-xl bg-emerald-500/10 p-3 text-center font-bold text-emerald-200">✓ Abgeschlossen {entry?.completed_at?new Date(entry.completed_at).toLocaleDateString("de-DE"):""}</p>}</div></article>})}</section>}</main>}
-function count(tab:"available"|"active"|"completed"|"failed",quests:Quest[],map:Map<string,CharacterQuest>){return quests.filter(q=>{const e=map.get(q.id);return tab==="available"?!e||e.status==="abandoned":e?.status===tab}).length}
-function parseObjectives(value:unknown){if(!Array.isArray(value))return ["Questziel entdecken"];return value.map(x=>typeof x==="object"&&x&&"text"in x?String(x.text):String(x)).filter(Boolean)}
-function translate(message:string){if(message.includes("level too low"))return"Deine Stufe ist für diese Quest zu niedrig.";if(message.includes("active quest not found"))return"Diese Quest ist nicht mehr aktiv.";return message}
-function State({text}:{text:string}){return <main className="flex min-h-screen items-center justify-center px-4 text-white"><section className="rounded-3xl border border-[var(--mythoria-border)] p-8 text-center"><h1 className="text-2xl font-black">Questbuch nicht verfügbar</h1><p className="mt-3 text-[var(--mythoria-text-muted)]">{text}</p><Link href="/dashboard/characters" className="mt-6 inline-flex rounded-xl bg-green-700 px-5 py-3">Zur Übersicht</Link></section></main>}
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+type Character = {
+  id: string;
+  user_id: string;
+  name: string;
+  level: number;
+  experience: number;
+  gold: number;
+};
+type Quest = {
+  id: string;
+  title: string;
+  description: string;
+  quest_type: string;
+  difficulty: string;
+  level_requirement: number;
+  experience_reward: number;
+  gold_reward: number;
+  objectives: unknown;
+  created_at: string;
+};
+type CharacterQuest = {
+  id: string;
+  character_id: string;
+  quest_id: string;
+  status: "active" | "completed" | "failed" | "abandoned";
+  progress: unknown;
+  started_at: string;
+  completed_at: string | null;
+};
+const difficulty: Record<string, string> = {
+  easy: "Leicht",
+  normal: "Normal",
+  hard: "Schwer",
+  heroic: "Heroisch",
+};
+export default function QuestsPage() {
+  const { id } = useParams<{ id: string }>();
+  const supabase = useMemo(() => createClient(), []);
+  const [character, setCharacter] = useState<Character | null>(null);
+  const [quests, setQuests] = useState<Quest[]>([]);
+  const [entries, setEntries] = useState<CharacterQuest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [tab, setTab] = useState<
+    "available" | "active" | "completed" | "failed"
+  >("available");
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setError("Du bist nicht angemeldet.");
+      setLoading(false);
+      return;
+    }
+    const { data: c, error: ce } = await supabase
+      .from("characters")
+      .select("id,user_id,name,level,experience,gold")
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .overrideTypes<Character | null, { merge: false }>();
+    if (ce || !c) {
+      setError(ce?.message ?? "Charakter nicht gefunden.");
+      setLoading(false);
+      return;
+    }
+    const [questResult, entryResult] = await Promise.all([
+      supabase
+        .from("quests")
+        .select("*")
+        .order("level_requirement", { ascending: true }),
+      supabase
+        .from("character_quests")
+        .select("*")
+        .eq("character_id", id)
+        .eq("user_id", user.id),
+    ]);
+    if (questResult.error || entryResult.error)
+      setError(
+        questResult.error?.message ??
+          entryResult.error?.message ??
+          "Quests konnten nicht geladen werden.",
+      );
+    else {
+      setCharacter(c);
+      setQuests(questResult.data as unknown as Quest[]);
+      setEntries(entryResult.data as unknown as CharacterQuest[]);
+    }
+    setLoading(false);
+  }, [id, supabase]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+  const entryByQuest = useMemo(
+    () => new Map(entries.map((e) => [e.quest_id, e])),
+    [entries],
+  );
+  const visible = quests.filter((q) => {
+    const e = entryByQuest.get(q.id);
+    if (tab === "available") return !e || e.status === "abandoned";
+    return e?.status === tab;
+  });
+  async function act(quest: Quest, action: "accept" | "abandon" | "complete") {
+    setBusy(quest.id);
+    setError("");
+    const { error: e } = await supabase.rpc("change_character_quest", {
+      p_character_id: id,
+      p_quest_id: quest.id,
+      p_action: action,
+    });
+    if (e) setError(translate(e.message));
+    else {
+      await load();
+      setTab(
+        action === "complete"
+          ? "completed"
+          : action === "accept"
+            ? "active"
+            : "available",
+      );
+    }
+    setBusy(null);
+  }
+  if (loading)
+    return (
+      <main className="min-h-screen p-10 text-white">
+        Questbuch wird geladen …
+      </main>
+    );
+  if (!character) return <State text={error || "Charakter nicht gefunden."} />;
+  return (
+    <main className="mythoria-page mx-auto min-h-screen max-w-6xl px-4 py-8 text-white">
+      <header className="mythoria-page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[.3em] text-lime-200">
+            Questbuch
+          </p>
+          <h1 className="mt-2 text-3xl font-black">{character.name}</h1>
+          <p className="mt-2 text-[var(--mythoria-text-muted)]">
+            Stufe {character.level} · {character.experience} EP ·{" "}
+            {character.gold} Gold
+          </p>
+        </div>
+        <Link
+          href={"/dashboard/characters/" + id}
+          className="rounded-xl border border-[var(--mythoria-border)] px-5 py-3 text-center"
+        >
+          Zurück zum Charakter
+        </Link>
+      </header>
+      <nav className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 rounded-2xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/70 p-2">
+        {(
+          [
+            ["available", "Verfügbar"],
+            ["active", "Aktiv"],
+            ["completed", "Abgeschlossen"],
+            ["failed", "Gescheitert"],
+          ] as const
+        ).map(([key, text]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={
+              "rounded-xl px-3 py-3 text-sm font-bold " +
+              (tab === key
+                ? "bg-green-700 text-white"
+                : "text-[var(--mythoria-text-muted)] hover:bg-white/5")
+            }
+          >
+            {text} ({count(key, quests, entryByQuest)})
+          </button>
+        ))}
+      </nav>
+      {error && (
+        <p
+          role="alert"
+          className="mt-5 rounded-xl bg-red-500/10 p-4 text-red-200"
+        >
+          {error}
+        </p>
+      )}
+      {visible.length === 0 ? (
+        <section className="mt-7 rounded-3xl border border-dashed border-lime-400/30 p-16 text-center text-[var(--mythoria-text-muted)]">
+          In diesem Bereich gibt es derzeit keine Quests.
+        </section>
+      ) : (
+        <section className="mt-7 grid gap-5 md:grid-cols-2">
+          {visible.map((q) => {
+            const entry = entryByQuest.get(q.id);
+            const locked = character.level < q.level_requirement;
+            const objectives = parseObjectives(q.objectives);
+            return (
+              <article
+                key={q.id}
+                className="rounded-3xl border border-[var(--mythoria-border)] bg-[var(--mythoria-surface)]/90 p-6"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wider text-amber-300">
+                      {difficulty[q.difficulty] ?? q.difficulty} · Stufe{" "}
+                      {q.level_requirement}
+                    </p>
+                    <h2 className="mt-2 text-2xl font-black">{q.title}</h2>
+                  </div>
+                  {locked && (
+                    <span className="rounded-full bg-red-500/10 px-3 py-1 text-xs text-red-200">
+                      Gesperrt
+                    </span>
+                  )}
+                </div>
+                <p className="mt-4 leading-7 text-[var(--mythoria-text-muted)]">
+                  {q.description}
+                </p>
+                <div className="mt-5 rounded-2xl bg-black/20 p-4">
+                  <p className="text-xs font-black uppercase text-[var(--mythoria-text-disabled)]">
+                    Ziele
+                  </p>
+                  <ul className="mt-3 space-y-2 text-sm text-[var(--mythoria-text-secondary)]">
+                    {objectives.map((x, i) => (
+                      <li key={i}>◇ {x}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="mt-5 flex gap-4 text-sm font-bold">
+                  <span className="text-lime-100">
+                    +{q.experience_reward} EP
+                  </span>
+                  <span className="text-amber-200">+{q.gold_reward} Gold</span>
+                </div>
+                <div className="mt-6 flex gap-3">
+                  {tab === "available" && (
+                    <button
+                      disabled={locked || busy === q.id}
+                      onClick={() => void act(q, "accept")}
+                      className="flex-1 rounded-xl bg-green-700 px-4 py-3 font-black disabled:opacity-40"
+                    >
+                      {locked ? "Höhere Stufe benötigt" : "Quest annehmen"}
+                    </button>
+                  )}
+                  {tab === "active" && (
+                    <>
+                      <button
+                        disabled={busy === q.id}
+                        onClick={() => void act(q, "complete")}
+                        className="flex-1 rounded-xl bg-emerald-600 px-4 py-3 font-black disabled:opacity-40"
+                      >
+                        Als erledigt markieren
+                      </button>
+                      <button
+                        disabled={busy === q.id}
+                        onClick={() => void act(q, "abandon")}
+                        className="rounded-xl bg-red-500/10 px-4 py-3 font-bold text-red-200"
+                      >
+                        Abbrechen
+                      </button>
+                    </>
+                  )}
+                  {tab === "failed" && (
+                    <p className="w-full rounded-xl bg-red-500/10 p-3 text-center font-bold text-red-200">
+                      Quest gescheitert
+                    </p>
+                  )}
+                  {tab === "completed" && (
+                    <p className="w-full rounded-xl bg-emerald-500/10 p-3 text-center font-bold text-emerald-200">
+                      ✓ Abgeschlossen{" "}
+                      {entry?.completed_at
+                        ? new Date(entry.completed_at).toLocaleDateString(
+                            "de-DE",
+                          )
+                        : ""}
+                    </p>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      )}
+    </main>
+  );
+}
+function count(
+  tab: "available" | "active" | "completed" | "failed",
+  quests: Quest[],
+  map: Map<string, CharacterQuest>,
+) {
+  return quests.filter((q) => {
+    const e = map.get(q.id);
+    return tab === "available"
+      ? !e || e.status === "abandoned"
+      : e?.status === tab;
+  }).length;
+}
+function parseObjectives(value: unknown) {
+  if (!Array.isArray(value)) return ["Questziel entdecken"];
+  return value
+    .map((x) =>
+      typeof x === "object" && x && "text" in x ? String(x.text) : String(x),
+    )
+    .filter(Boolean);
+}
+function translate(message: string) {
+  if (message.includes("level too low"))
+    return "Deine Stufe ist für diese Quest zu niedrig.";
+  if (message.includes("active quest not found"))
+    return "Diese Quest ist nicht mehr aktiv.";
+  return message;
+}
+function State({ text }: { text: string }) {
+  return (
+    <main className="flex min-h-screen items-center justify-center px-4 text-white">
+      <section className="rounded-3xl border border-[var(--mythoria-border)] p-8 text-center">
+        <h1 className="text-2xl font-black">Questbuch nicht verfügbar</h1>
+        <p className="mt-3 text-[var(--mythoria-text-muted)]">{text}</p>
+        <Link
+          href="/dashboard/characters"
+          className="mt-6 inline-flex rounded-xl bg-green-700 px-5 py-3"
+        >
+          Zur Übersicht
+        </Link>
+      </section>
+    </main>
+  );
+}

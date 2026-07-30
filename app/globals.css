@@ -125,9 +125,88 @@ button:not(:disabled), a[href] { cursor: pointer; }
 .mythoria-stat-bar { height: 10px; overflow: hidden; border: 1px solid var(--mythoria-border); border-radius: 999px; background: rgba(2,4,3,.72); }
 .mythoria-focus-ring:focus-visible { outline: 2px solid var(--mythoria-neon); outline-offset: 3px; }
 .mythoria-fade-in { animation: mythoria-fade-in 360ms ease both; }
+.legal-content strong { color: var(--mythoria-text); }
+.legal-content a { color: var(--mythoria-neon-soft); text-decoration: underline; text-underline-offset: 3px; }
+.legal-content code { border: 1px solid var(--mythoria-border); border-radius: 6px; background: var(--mythoria-black); padding: .1rem .35rem; color: var(--mythoria-gold-light); }
 .mythoria-glow { animation: mythoria-glow 3.5s ease-in-out infinite; }
 @keyframes mythoria-fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes mythoria-glow { 50% { filter: drop-shadow(0 0 18px rgba(185,255,56,.18)); } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* Studio dashboard system */
+.dashboard-studio {
+  --atmosphere-rgb: 86, 121, 31;
+  --danger-accent: var(--mythoria-green-bright);
+  isolation: isolate;
+}
+.dashboard-content { position: relative; z-index: 1; }
+.dashboard-studio main { position: relative; z-index: 1; }
+.mythoria-studio-background {
+  position: fixed; inset: 0; z-index: -10; overflow: hidden; pointer-events: none;
+  background:
+    radial-gradient(circle at 55% -8%, rgba(var(--atmosphere-rgb), .2), transparent 34%),
+    linear-gradient(180deg, rgba(7,9,6,.98), rgba(2,4,3,1));
+  transition: background 500ms ease;
+}
+.mythoria-studio-background::after {
+  position: absolute; inset: 0; content: ""; opacity: .035;
+  background-image: linear-gradient(rgba(255,255,255,.45) 1px, transparent 1px), linear-gradient(90deg,rgba(255,255,255,.45) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(to bottom, black, transparent 80%);
+}
+.mythoria-studio-glow { position: absolute; border-radius: 999px; filter: blur(130px); }
+.mythoria-studio-glow-left { left: -12rem; top: 28%; width: 28rem; height: 28rem; background: rgba(var(--atmosphere-rgb), .1); }
+.mythoria-studio-glow-right { right: -15rem; bottom: -5rem; width: 34rem; height: 34rem; background: rgba(var(--atmosphere-rgb), .075); }
+.mythoria-page-header {
+  position: relative; overflow: hidden; padding: 1.15rem 1.25rem;
+  border: 1px solid var(--mythoria-border); border-radius: 20px;
+  background: linear-gradient(135deg, rgba(18,21,10,.9), rgba(5,7,4,.78));
+  box-shadow: inset 0 1px rgba(255,255,255,.035), 0 16px 45px rgba(0,0,0,.22);
+}
+.mythoria-page-header::before {
+  position: absolute; inset: 0 auto 0 0; width: 3px; content: "";
+  background: linear-gradient(180deg, var(--mythoria-green-bright), var(--mythoria-gold-dark), transparent);
+}
+.dashboard-studio .mythoria-card,
+.dashboard-studio .mythoria-panel { backdrop-filter: blur(14px); }
+.dashboard-studio .mythoria-card { box-shadow: inset 0 1px rgba(255,255,255,.035), 0 14px 38px rgba(0,0,0,.22); }
+.dashboard-studio table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.dashboard-studio th { color: var(--mythoria-gold-light); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; }
+.dashboard-studio th, .dashboard-studio td { padding: .8rem 1rem; border-bottom: 1px solid var(--mythoria-border); text-align: left; }
+
+/* Location-driven atmosphere for every character route. */
+.mythoria-world-context { --atmosphere-rgb: 86,121,31; --danger-accent: var(--mythoria-green-bright); min-height: 100vh; }
+.mythoria-world-context[data-danger="2"] { --atmosphere-rgb: 126,112,42; --danger-accent: #d1b95c; }
+.mythoria-world-context[data-danger="3"] { --atmosphere-rgb: 139,75,31; --danger-accent: #df9147; }
+.mythoria-world-context[data-danger="4"] { --atmosphere-rgb: 122,38,27; --danger-accent: #df6654; }
+.mythoria-world-context[data-danger="5"] { --atmosphere-rgb: 82,12,18; --danger-accent: #ef4e5d; }
+.mythoria-world-context::before {
+  position: fixed; inset: 0; z-index: -1; content: ""; pointer-events: none;
+  background:
+    radial-gradient(circle at 70% 5%, rgba(var(--atmosphere-rgb), .24), transparent 34%),
+    linear-gradient(180deg, transparent 25%, rgba(var(--atmosphere-rgb), .055));
+}
+.mythoria-location-bar {
+  position: sticky; top: 0; z-index: 35; display: grid;
+  grid-template-columns: minmax(0,1fr) auto auto auto; align-items: center; gap: .85rem;
+  min-height: 54px; padding: .45rem 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--danger-accent) 38%, var(--mythoria-border));
+  background: rgba(4,6,3,.9); box-shadow: 0 12px 32px rgba(0,0,0,.25); backdrop-filter: blur(18px);
+}
+.mythoria-location-kicker { font-size: .55rem; font-weight: 800; letter-spacing: .18em; color: var(--danger-accent); }
+.mythoria-danger-meter { display: flex; gap: 3px; }
+.mythoria-danger-meter span { width: 4px; height: 20px; border-radius: 99px; background: rgba(255,255,255,.09); }
+.mythoria-danger-meter span[data-active="true"] { background: var(--danger-accent); box-shadow: 0 0 10px color-mix(in srgb, var(--danger-accent) 55%, transparent); }
+.mythoria-location-link {
+  display: inline-flex; align-items: center; min-height: 32px; padding: .3rem .65rem;
+  border: 1px solid var(--mythoria-border); border-radius: 9px;
+  color: var(--mythoria-gold-light); font-size: .68rem; font-weight: 800;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+.mythoria-location-link:hover { border-color: var(--danger-accent); background: rgba(var(--atmosphere-rgb),.12); }
+@media (max-width: 639px) {
+  .mythoria-location-bar { grid-template-columns: minmax(0,1fr) auto auto; gap: .6rem; }
+  .mythoria-page-header { padding: 1rem; }
 }

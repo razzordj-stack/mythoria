@@ -23,7 +23,7 @@
 | `/dashboard/characters/[id]/market`                  | Händler, Verkauf, Charisma-Preise und Herstellung           |
 | `/dashboard/characters/[id]/reputation`              | Fraktionen, Rufstufen, Ereignisse und Handelsvorteile       |
 | `/dashboard/characters/[id]/companions`              | Rekrutierung, Loyalität und aktive Zweiergruppe             |
-| `/dashboard/characters/[id]/adventure`               | Gespeicherte Abenteuer-Sessions und Verlauf                 |
+| `/dashboard/characters/[id]/adventure`               | Gespeicherte Abenteuer, Verlauf und optionaler Vorleser     |
 | `/dashboard/characters/[id]/adventure/history`       | Lesbares Archiv aller Chroniken eines Charakters            |
 | `/dashboard/profile`                                 | Profil gestaltet                                            |
 | `/dashboard/world`                                   | Durchsuchbares, aus Supabase geladenes Weltlexikon          |
