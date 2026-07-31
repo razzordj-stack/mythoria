@@ -18,12 +18,20 @@ Optional und bis zur letzten KI-Phase nicht erforderlich:
 
 Geheimnisse dürfen niemals als `NEXT_PUBLIC_*` gespeichert oder in das Repository eingecheckt werden. Die beiden Supabase-Werte sind absichtlich öffentlich nutzbare Projektwerte; der Service-Role-Key wird von der Anwendung nicht benötigt.
 
+## Produktionskonfiguration
+
+Die aktuelle Produktionsdomain lautet `https://mythoria-chroniken.com` und wird über Vercel bereitgestellt.
+
+Der Produktions-Health-Endpunkt ist erreichbar:
+
+- `https://mythoria-chroniken.com/api/health` → erwartet HTTP 200 und `status: "ok"`
+
 ## Supabase Auth
 
 Sobald die endgültige Domain feststeht, müssen im Supabase-Dashboard unter **Authentication → URL Configuration** gesetzt werden:
 
-- Site URL: `https://DEINE-DOMAIN`
-- Redirect URL: `https://DEINE-DOMAIN/dashboard`
+- Site URL: `https://mythoria-chroniken.com`
+- Redirect URL: `https://mythoria-chroniken.com/dashboard`
 - für Vorschauen optional die gezielt benötigten Preview-URLs
 
 Ohne die endgültige Domain kann dieser Schritt nicht vorab sicher automatisiert werden. Wildcard-Redirects sollten für Produktion vermieden werden.
@@ -43,7 +51,31 @@ Der Health-Endpunkt antwortet mit HTTP 200, wenn Anwendung und Datenbank erreich
 ## Betrieb
 
 - Plattform-Logs auf HTTP-5xx-Antworten und `Health check` überwachen.
-- Den Health-Endpunkt mindestens alle fünf Minuten prüfen.
+- Den Health-Endpunkt mindestens alle fünf Minuten prüfen. Geeignete Dienste dafür sind beispielsweise Better Uptime, UptimeRobot oder Vercel Monitoring.
 - Supabase-Datenbank-Backups vor größeren Migrationen kontrollieren.
 - Abhängigkeiten regelmäßig aktualisieren; keine automatischen erzwungenen Major-Downgrades durch `npm audit fix --force` durchführen.
 - Bei einem Rollback Anwendung und Datenbankmigrationen getrennt bewerten, da Datenbankmigrationen nicht automatisch durch ein Hosting-Rollback zurückgesetzt werden.
+
+## Geprüfter Produktionsstand – 31. Juli 2026
+
+- Startseite und Login: HTTP 200
+- Health-Endpunkt: HTTP 200, Anwendung und Datenbank `ok`
+- Nicht angemeldetes Dashboard: HTTP 307 zur Anmeldung
+- HSTS, Content-Security-Policy, `X-Frame-Options: DENY` und Referrer-Policy aktiv
+
+## Rollback-Ablauf in Vercel
+
+1. In Vercel das Projekt öffnen und zu **Deployments** wechseln.
+2. Das letzte funktionierende Deployment öffnen und **Promote to Production** auswählen.
+3. Anschließend `/api/health`, Login und Dashboard erneut prüfen.
+4. Datenbankmigrationen nicht zurückrollen, ohne ihre Abhängigkeiten vorher zu prüfen. Bei fehlerhaften Datenbankänderungen eine neue, korrigierende Migration erstellen.
+
+## Manueller Auth-Smoketest
+
+Vor einem größeren Release mit einem separaten Testkonto dokumentieren:
+
+1. Registrierung und Bestätigungs-E-Mail
+2. Login und Logout
+3. Passwort-Reset und Rückkehr zur Produktionsdomain
+4. Erstellung eines Testcharakters
+5. Zugriffsschutz: `/dashboard` ohne Sitzung muss zur Anmeldung umleiten
