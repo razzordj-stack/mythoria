@@ -90,17 +90,6 @@ Aktueller Qualitätsstand:
 
 ## Aktuelle Blocker vor dem Go-live
 
-### Supabase Public API
-
-Die direkte Supabase-CLI-Datenbankverbindung funktioniert und alle Migrationen sind synchron. Das öffentliche Supabase-Gateway beantwortet Anfragen mit den aktuell ausgelesenen Publishable- und Legacy-Anon-Keys jedoch mit HTTP 401. Dadurch meldet `/api/health` derzeit korrekt den Zustand `degraded`.
-
-Vor dem Deployment:
-
-1. Public API und Auth-Einstellungen im Supabase-Dashboard prüfen.
-2. Falls erforderlich einen neuen Publishable-Key erzeugen.
-3. Key lokal und später im Hosting-Projekt eintragen.
-4. `/api/health` erneut prüfen; erwartet werden HTTP 200 und `status: "ok"`.
-
 ### Hosting und Domain
 
 Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgelegt. Nach Festlegung müssen in Supabase die Site URL und erlaubten Auth-Redirect-URLs eingetragen werden.
@@ -113,14 +102,15 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 
 ### Phase 7 – Supabase-Zugriff und Release-Freigabe
 
-**Priorität: sehr hoch**
+**Status: abgeschlossen am 31. Juli 2026**
 
-- öffentlichen Supabase-Zugriff reparieren
-- Login, Registrierung und Passwort-Reset erneut live testen
-- Health-Endpunkt auf `ok` bringen
-- vollständigen Release-Check ausführen
+- sicherer Datenbank-Health-Check über eine dedizierte, lesefreie RPC-Funktion umgesetzt
+- Anwendungstabellen und Row-Level-Security bleiben für anonyme Zugriffe geschlossen
+- Supabase-Migration remote übertragen
+- `https://mythoria-chroniken.com/api/health` liefert HTTP 200 mit `status: "ok"`
+- Lint, 20 Unit-Tests und Produktions-Build erfolgreich geprüft
 
-**Abnahmekriterium:** Public API erreichbar, Authentifizierung funktioniert, `/api/health` liefert HTTP 200.
+**Restlicher manueller Smoke-Test:** Registrierung, Passwort-Reset und Login mit einem separaten Testkonto auf der Produktionsdomain dokumentieren.
 
 ### Phase 8 – Hosting und Produktionsbereitstellung
 
@@ -201,7 +191,8 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 - `npm run lint` ist ohne Fehler durchgelaufen.
 - `npm run build` ist mit Next.js 16.2.12 erfolgreich durchgelaufen; `/dashboard/shop` ist im Build enthalten.
 - Die KI-Spielleiter-Integration bleibt entsprechend der aktuellen Entscheidung bis zum Schluss zurückgestellt.
+- Der Produktions-Health-Check ist seit dem 31. Juli 2026 grün: Anwendung und Supabase-Datenbank sind erreichbar.
 
 ## Empfohlener Wiedereinstieg
 
-Beim nächsten Arbeitstag mit **Phase 7 – Supabase-Zugriff und Release-Freigabe** beginnen. Anschließend die noch offenen Seiten- und Nutzerabläufe visuell prüfen. Der Markenshop bleibt bis zur Auswahl eines Anbieters und zur Festlegung echter Produkte ein klar gekennzeichneter Platzhalter.
+Beim nächsten Arbeitstag mit **Phase 8 – Hosting und Produktionsbereitstellung** fortfahren: den manuellen Auth-Smoketest dokumentieren, anschließend Monitoring und Rollback-Ablauf festlegen. Der Markenshop bleibt bis zur Auswahl eines Anbieters und zur Festlegung echter Produkte ein klar gekennzeichneter Platzhalter.
