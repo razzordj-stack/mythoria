@@ -39,15 +39,6 @@ const raceLabels: Record<string, string> = {
     dragonkin: "Drachenblütiger",
 };
 
-const raceIcons: Record<string, string> = {
-    human: "🛡️",
-    elf: "🌿",
-    dwarf: "⛏️",
-    orc: "⚔️",
-    shadowborn: "🌑",
-    dragonkin: "🐉",
-};
-
 const classLabels: Record<string, string> = {
     warrior: "Krieger",
     mage: "Magier",
@@ -55,15 +46,6 @@ const classLabels: Record<string, string> = {
     rogue: "Schurke",
     paladin: "Paladin",
     necromancer: "Nekromant",
-};
-
-const classIcons: Record<string, string> = {
-    warrior: "⚔️",
-    mage: "🔮",
-    ranger: "🏹",
-    rogue: "🗡️",
-    paladin: "☀️",
-    necromancer: "💀",
 };
 
 export default function CharactersPage() {
@@ -491,10 +473,7 @@ function CharacterCard({
         classLabels[character.character_class] ??
         formatValue(character.character_class);
 
-    const icon =
-        classIcons[character.character_class] ??
-        raceIcons[character.race] ??
-        "✦";
+    const portraitKey = character.character_class || character.race;
 
     const experience =
         character.experience ?? 0;
@@ -521,7 +500,7 @@ function CharacterCard({
                 <div className="relative text-center">
                     <CharacterAvatar
                         name={character.name}
-                        icon={icon}
+                        portraitKey={portraitKey}
                         className="mx-auto transition group-hover:scale-105"
                     />
 

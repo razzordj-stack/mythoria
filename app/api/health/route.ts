@@ -13,12 +13,13 @@ export async function GET() {
     const supabase = createClient(supabaseUrl, supabasePublishableKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { error } = await supabase
-      .from("world_locations")
-      .select("id", { count: "exact", head: true });
+    const { data, error } = await supabase.rpc("check_database_health");
 
-    if (error) {
-      console.error("Health check: Supabase nicht erreichbar", error.message);
+    if (error || data !== true) {
+      console.error(
+        "Health check: Supabase nicht erreichbar",
+        error?.message ?? "unexpected health-check response",
+      );
       return Response.json(
         {
           status: "degraded",

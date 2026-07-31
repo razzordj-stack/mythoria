@@ -153,10 +153,7 @@ export function CharacterFeaturePlaceholder({
             <section className="relative w-full max-w-3xl rounded-[2rem] border border-lime-400/20 bg-[var(--mythoria-surface)]/90 p-7 text-center shadow-2xl shadow-green-950/30 backdrop-blur-xl sm:p-12">
                 <CharacterAvatar
                     name={character.name}
-                    icon={getCharacterIcon(
-                        character.race,
-                        character.character_class,
-                    )}
+                    portraitKey={character.character_class || character.race}
                     size="xl"
                     className="mx-auto"
                 />
@@ -189,28 +186,5 @@ export function CharacterFeaturePlaceholder({
                 </Link>
             </section>
         </main>
-    );
-}
-
-function getCharacterIcon(race: string, characterClass: string) {
-    const icons: Record<string, string> = {
-        warrior: "⚔️",
-        mage: "🔮",
-        ranger: "🏹",
-        rogue: "🗡️",
-        paladin: "☀️",
-        necromancer: "💀",
-        human: "🛡️",
-        elf: "🌿",
-        dwarf: "⛏️",
-        orc: "⚔️",
-        shadowborn: "🌑",
-        dragonkin: "🐉",
-    };
-
-    return (
-        icons[characterClass.toLowerCase()] ??
-        icons[race.toLowerCase()] ??
-        "✦"
     );
 }

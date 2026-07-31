@@ -1,6 +1,6 @@
 # Mythoria – aktuelle Roadmap
 
-**Stand:** 29. Juli 2026  
+**Stand:** 31. Juli 2026
 **Projektphase:** Funktionsumfang weitgehend umgesetzt, Release-Vorbereitung begonnen  
 **Grundsatz:** Die KI-Spielleiter-Integration ist mit `gpt-5.6-terra` technisch eingerichtet und wird nach gesicherter API-Abrechnung und Live-Tests final abgenommen.
 
@@ -16,7 +16,7 @@ Aktueller Qualitätsstand:
 - Produktions-Build bestanden
 - 31 Supabase-Migrationen lokal und remote synchron
 - Supabase-Schema-Linter ohne Fehler
-- 20 Anwendungsseiten sowie zwei API-Routen vorhanden
+- 27 statisch erfasste Seiten sowie zwei API-Routen im aktuellen Produktions-Build vorhanden
 
 ## Abgeschlossene Phasen
 
@@ -39,6 +39,8 @@ Aktueller Qualitätsstand:
 ### 3. Charakter- und Spielsysteme
 
 - Charaktererstellung, Übersicht, Detailansicht und Bearbeitung
+- zwölf einheitliche, generierte Fantasy-Porträts für sechs Völker und sechs Klassen
+- Klassen- und Volksbilder ohne Emoji-Platzhalter in Erstellung, Vorschau, Dashboard und Charakteransichten integriert
 - Attribute, Level, Erfahrung und abgeleitete Werte
 - Inventar, Ausrüstung und Gegenstandsverwaltung
 - Fähigkeiten und Talentbäume
@@ -65,6 +67,15 @@ Aktueller Qualitätsstand:
 - Benachrichtigungssystem
 - rollenbasierter Adminbereich
 - Inhaltsverwaltung, Benutzermoderation und Audit-Protokoll
+
+### 6.5 Marke und Unterstützung
+
+- öffentliche Support-Seite mit Roadmap-Fortschritt
+- Discord-Supportserver auf Start- und Supportseite verlinkt
+- rechtliche Grundseiten für Datenschutz, Impressum, Nutzungsbedingungen, Cookies und Widerruf angelegt
+- geschützter Markenshop-Platzhalter unter `/dashboard/shop` erstellt
+- geplante Produktbereiche für T-Shirts, Hoodies und Accessoires ausgewiesen
+- bewusst noch keine Preise, Produktdaten oder Bestellfunktion hinterlegt
 
 ### 6. Sicherheit und Qualität
 
@@ -158,6 +169,19 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 
 **Abnahmekriterium:** Ein zusammenhängender, mehrfach spielbarer Inhaltsbogen steht zur Verfügung.
 
+### Phase 11.5 – Mythoria-Markenshop
+
+**Priorität: später**
+
+- Shopanbieter und Fulfillment-Modell auswählen
+- finale Produktmotive und Produktbilder erstellen
+- Größen, Materialien, Preise, Versandgebiete und Lieferzeiten festlegen
+- Checkout und Zahlungsanbieter rechtssicher integrieren
+- Bestellbestätigung, Retouren und Supportablauf ergänzen
+- Datenschutz, Widerruf und Impressum vor Veröffentlichung juristisch prüfen lassen
+
+**Abnahmekriterium:** Testbestellung, Zahlung, Bestätigung und Widerrufsablauf funktionieren vollständig; alle Pflichtinformationen sind veröffentlicht.
+
 ### Phase 12 – KI-Spielleiter abschließen
 
 **Priorität: zuletzt**
@@ -171,6 +195,13 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 
 **Abnahmekriterium:** Mehrere aufeinanderfolgende Abenteuerzüge werden zuverlässig, sicher und ohne Datenverlust beantwortet und gespeichert.
 
+## Stand zum Tagesabschluss
+
+- Charakterporträt-System und Markenshop-Platzhalter sind umgesetzt.
+- `npm run lint` ist ohne Fehler durchgelaufen.
+- `npm run build` ist mit Next.js 16.2.12 erfolgreich durchgelaufen; `/dashboard/shop` ist im Build enthalten.
+- Die KI-Spielleiter-Integration bleibt entsprechend der aktuellen Entscheidung bis zum Schluss zurückgestellt.
+
 ## Empfohlener Wiedereinstieg
 
-Beim nächsten Arbeitstag mit **Phase 7 – Supabase-Zugriff und Release-Freigabe** beginnen. Erst wenn Public API, Authentifizierung und Health-Check grün sind, sollte das eigentliche Hosting gestartet werden.
+Beim nächsten Arbeitstag mit **Phase 7 – Supabase-Zugriff und Release-Freigabe** beginnen. Anschließend die noch offenen Seiten- und Nutzerabläufe visuell prüfen. Der Markenshop bleibt bis zur Auswahl eines Anbieters und zur Festlegung echter Produkte ein klar gekennzeichneter Platzhalter.

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CharacterAvatar } from "@/app/components/character-avatar";
+import { CharacterAvatar, CharacterPortrait } from "@/app/components/character-avatar";
 import { useRouter } from "next/navigation";
 import {
     type FormEvent,
@@ -21,7 +21,6 @@ type FormErrors = {
 type RaceOption = {
     id: string;
     name: string;
-    icon: string;
     description: string;
     bonus: string;
 };
@@ -29,7 +28,6 @@ type RaceOption = {
 type ClassOption = {
     id: string;
     name: string;
-    icon: string;
     description: string;
     specialty: string;
 };
@@ -38,7 +36,6 @@ const raceOptions: RaceOption[] = [
     {
         id: "human",
         name: "Mensch",
-        icon: "🛡️",
         description:
             "Anpassungsfähig, entschlossen und in allen Reichen Mythorias anzutreffen.",
         bonus: "Ausgewogene Attribute",
@@ -46,7 +43,6 @@ const raceOptions: RaceOption[] = [
     {
         id: "elf",
         name: "Elf",
-        icon: "🌿",
         description:
             "Alte Waldvölker mit scharfen Sinnen und einer natürlichen Verbindung zur Magie.",
         bonus: "Magie und Geschick",
@@ -54,7 +50,6 @@ const raceOptions: RaceOption[] = [
     {
         id: "dwarf",
         name: "Zwerg",
-        icon: "⛏️",
         description:
             "Widerstandsfähige Bergbewohner, Meister der Schmiedekunst und des Nahkampfs.",
         bonus: "Stärke und Rüstung",
@@ -62,7 +57,6 @@ const raceOptions: RaceOption[] = [
     {
         id: "orc",
         name: "Ork",
-        icon: "⚔️",
         description:
             "Furchtlose Krieger mit großer Körperkraft und einem unerschütterlichen Willen.",
         bonus: "Kraft und Ausdauer",
@@ -70,7 +64,6 @@ const raceOptions: RaceOption[] = [
     {
         id: "shadowborn",
         name: "Schattengeborener",
-        icon: "🌑",
         description:
             "Mysteriöse Wesen zwischen Licht und Dunkelheit, umgeben von verbotener Magie.",
         bonus: "Schatten und Täuschung",
@@ -78,7 +71,6 @@ const raceOptions: RaceOption[] = [
     {
         id: "dragonkin",
         name: "Drachenblütiger",
-        icon: "🐉",
         description:
             "Seltene Nachfahren uralter Drachen, in deren Adern elementare Macht pulsiert.",
         bonus: "Elementarkraft",
@@ -89,7 +81,6 @@ const classOptions: ClassOption[] = [
     {
         id: "warrior",
         name: "Krieger",
-        icon: "⚔️",
         description:
             "Ein standhafter Nahkämpfer mit schwerer Rüstung und mächtigen Waffen.",
         specialty: "Nahkampf",
@@ -97,7 +88,6 @@ const classOptions: ClassOption[] = [
     {
         id: "mage",
         name: "Magier",
-        icon: "🔮",
         description:
             "Beherrscht arkane Energien und entfesselt vernichtende Zauber.",
         specialty: "Arkane Magie",
@@ -105,7 +95,6 @@ const classOptions: ClassOption[] = [
     {
         id: "ranger",
         name: "Waldläufer",
-        icon: "🏹",
         description:
             "Ein präziser Fernkämpfer, Spurenleser und Überlebenskünstler.",
         specialty: "Fernkampf",
@@ -113,7 +102,6 @@ const classOptions: ClassOption[] = [
     {
         id: "rogue",
         name: "Schurke",
-        icon: "🗡️",
         description:
             "Schnell, lautlos und tödlich. Meister von Schatten, Fallen und Hinterhalten.",
         specialty: "Täuschung",
@@ -121,7 +109,6 @@ const classOptions: ClassOption[] = [
     {
         id: "paladin",
         name: "Paladin",
-        icon: "☀️",
         description:
             "Ein heiliger Kämpfer, der Schutzmagie mit schwerer Bewaffnung verbindet.",
         specialty: "Schutz und Heilung",
@@ -129,7 +116,6 @@ const classOptions: ClassOption[] = [
     {
         id: "necromancer",
         name: "Nekromant",
-        icon: "💀",
         description:
             "Ein verbotener Magier, der die Grenze zwischen Leben und Tod berührt.",
         specialty: "Totenmagie",
@@ -438,7 +424,7 @@ export default function NewCharacterPage() {
                                         key={option.id}
                                         selected={race === option.id}
                                         title={option.name}
-                                        icon={option.icon}
+                                        portraitKey={option.id}
                                         description={option.description}
                                         detail={option.bonus}
                                         onClick={() => {
@@ -473,7 +459,7 @@ export default function NewCharacterPage() {
                                         key={option.id}
                                         selected={characterClass === option.id}
                                         title={option.name}
-                                        icon={option.icon}
+                                        portraitKey={option.id}
                                         description={option.description}
                                         detail={option.specialty}
                                         onClick={() => {
@@ -633,7 +619,7 @@ function FormSection({
 type SelectionCardProps = {
     selected: boolean;
     title: string;
-    icon: string;
+    portraitKey: string;
     description: string;
     detail: string;
     onClick: () => void;
@@ -642,7 +628,7 @@ type SelectionCardProps = {
 function SelectionCard({
     selected,
     title,
-    icon,
+    portraitKey,
     description,
     detail,
     onClick,
@@ -660,9 +646,7 @@ function SelectionCard({
             ].join(" ")}
         >
             <div className="flex items-start gap-4">
-                <span className="flex h-12 min-w-12 items-center justify-center rounded-xl border border-[var(--mythoria-border)] bg-black/30 text-2xl">
-                    {icon}
-                </span>
+                <CharacterPortrait portraitKey={portraitKey} label={title} className="h-16 min-w-16" />
 
                 <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -706,7 +690,7 @@ function CharacterPreview({
     appearance,
 }: CharacterPreviewProps) {
     const displayName = name.trim() || "Unbenannter Held";
-    const displayIcon = characterClass?.icon ?? race?.icon ?? "✦";
+    const portraitKey = characterClass?.id ?? race?.id ?? null;
 
     return (
         <div className="overflow-hidden rounded-3xl border border-lime-400/20 bg-[#0b0e08]/90 shadow-2xl shadow-green-950/40 backdrop-blur-xl">
@@ -717,7 +701,7 @@ function CharacterPreview({
                 <div className="relative text-center">
                     <CharacterAvatar
                         name={displayName}
-                        icon={displayIcon}
+                        portraitKey={portraitKey}
                         size="xl"
                         className="mx-auto"
                     />

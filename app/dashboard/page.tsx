@@ -44,18 +44,6 @@ const raceLabels: Record<string, string> = {
     dragonkin: "Drachenblütiger",
 };
 
-const raceIcons: Record<string, string> = {
-    human: "🛡️",
-    mensch: "🛡️",
-    elf: "🌿",
-    dwarf: "⛏️",
-    zwerg: "⛏️",
-    orc: "⚔️",
-    ork: "⚔️",
-    shadowborn: "🌑",
-    dragonkin: "🐉",
-};
-
 const classLabels: Record<string, string> = {
     warrior: "Krieger",
     krieger: "Krieger",
@@ -68,20 +56,6 @@ const classLabels: Record<string, string> = {
     paladin: "Paladin",
     necromancer: "Nekromant",
     nekromant: "Nekromant",
-};
-
-const classIcons: Record<string, string> = {
-    warrior: "⚔️",
-    krieger: "⚔️",
-    mage: "🔮",
-    magier: "🔮",
-    ranger: "🏹",
-    waldlaeufer: "🏹",
-    rogue: "🗡️",
-    schurke: "🗡️",
-    paladin: "☀️",
-    necromancer: "💀",
-    nekromant: "💀",
 };
 
 export default function CharactersPage() {
@@ -379,9 +353,6 @@ type PageHeaderProps = {
 };
 
 function CommandCenter({ character }: { character: Character }) {
-    const normalizedClass = character.character_class.toLowerCase();
-    const normalizedRace = character.race.toLowerCase();
-    const icon = classIcons[normalizedClass] ?? raceIcons[normalizedRace] ?? "✦";
     const characterHref = `/dashboard/characters/${character.id}`;
 
     return (
@@ -389,7 +360,7 @@ function CommandCenter({ character }: { character: Character }) {
             <article className="mythoria-panel relative overflow-hidden p-5 sm:p-6">
                 <div aria-hidden="true" className="absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_right,rgba(147,182,64,.16),transparent_66%)]" />
                 <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
-                    <CharacterAvatar name={character.name} icon={icon} className="shrink-0" />
+                    <CharacterAvatar name={character.name} portraitKey={character.character_class || character.race} className="shrink-0" />
                     <div className="min-w-0 flex-1">
                         <p className="text-[10px] font-bold tracking-[.2em] text-[var(--mythoria-green-bright)]">ABENTEUER FORTSETZEN</p>
                         <h2 id="continue-title" className="mt-1 truncate text-2xl">{character.name}</h2>
@@ -572,11 +543,6 @@ function CharacterCard({
         classLabels[normalizedClass] ??
         formatValue(character.character_class);
 
-    const icon =
-        classIcons[normalizedClass] ??
-        raceIcons[normalizedRace] ??
-        "✦";
-
     const level = Math.max(character.level, 1);
 
     const experience = Math.max(
@@ -606,7 +572,7 @@ function CharacterCard({
                 <div className="relative text-center">
                     <CharacterAvatar
                         name={character.name}
-                        icon={icon}
+                        portraitKey={character.character_class || character.race}
                         className="mx-auto transition group-hover:scale-105"
                     />
 
