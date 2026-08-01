@@ -17,6 +17,8 @@ type Membership = {
 export default function PremiumPage() {
   const supabase = useMemo(() => createClient(), []);
   const [membership, setMembership] = useState<Membership | null>(null);
+  const [checkoutError, setCheckoutError] = useState("");
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(async () => {
@@ -38,6 +40,18 @@ export default function PremiumPage() {
     );
 
   const isPremium = membership.tier === "premium";
+  async function startCheckout() {
+    setCheckoutBusy(true);
+    setCheckoutError("");
+    const response = await fetch("/api/premium/checkout", { method: "POST" });
+    const payload = (await response.json()) as { url?: string; error?: string };
+    if (!response.ok || !payload.url) {
+      setCheckoutError(payload.error ?? "Der Checkout konnte nicht gestartet werden.");
+      setCheckoutBusy(false);
+      return;
+    }
+    window.location.assign(payload.url);
+  }
   return (
     <main className="mythoria-page mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <MythoriaPageHeader
@@ -80,9 +94,13 @@ export default function PremiumPage() {
                 : "."}
             </MythoriaAlert>
           ) : (
-            <MythoriaAlert variant="info" className="mt-6">
-              Die Buchung wird erst aktiviert, sobald Stripe-Checkout und die automatische Mitgliedschaftsfreigabe eingerichtet sind. Bis dahin entstehen keine Kosten.
-            </MythoriaAlert>
+            <div className="mt-6 space-y-3">
+              {checkoutError && <MythoriaAlert variant="error">{checkoutError}</MythoriaAlert>}
+              <button className="mythoria-button-primary w-full" disabled={checkoutBusy} onClick={() => void startCheckout()}>
+                {checkoutBusy ? "Checkout wird geöffnet …" : "Premium wählen · 5 € / Monat"}
+              </button>
+              <p className="text-xs text-[var(--mythoria-text-muted)]">Der Checkout öffnet sich sicher bei Stripe. Die Mitgliedschaft wird nach erfolgreicher Zahlung automatisch aktiviert.</p>
+            </div>
           )}
         </article>
       </section>
