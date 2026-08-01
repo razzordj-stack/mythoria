@@ -127,10 +127,12 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 
 ### Phase 9 – Authentifizierte End-to-End-Tests
 
-**Priorität: hoch**
+**Status: vorbereitet – Testkonto ausstehend**
 
-- separates Testkonto und Testcharakter definieren
-- Login-Status für Playwright sicher vorbereiten
+- separaten, geheim gehaltenen Zugang über `E2E_TEST_EMAIL` und `E2E_TEST_PASSWORD` vorbereitet
+- automatisierten Login-, Dashboard- und Logout-Test für Desktop und Mobilgeräte ergänzt
+- authentifizierte Tests werden ohne lokale Zugangsdaten sicher übersprungen
+- separates Testkonto und Testcharakter bestätigen und hinterlegen
 - Charaktererstellung und -bearbeitung testen
 - Inventar-, Quest-, Kampf- und Reiseabläufe testen
 - Rollen- und Moderationszugriffe testen

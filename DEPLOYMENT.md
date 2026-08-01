@@ -79,3 +79,14 @@ Vor einem größeren Release mit einem separaten Testkonto dokumentieren:
 3. Passwort-Reset und Rückkehr zur Produktionsdomain
 4. Erstellung eines Testcharakters
 5. Zugriffsschutz: `/dashboard` ohne Sitzung muss zur Anmeldung umleiten
+
+## Automatisierte authentifizierte Tests
+
+Für Phase 9 ein separates, bestätigtes Testkonto verwenden und die Zugangsdaten ausschließlich lokal in `.env.local` eintragen:
+
+```text
+E2E_TEST_EMAIL=testkonto@deine-domain.de
+E2E_TEST_PASSWORD=ein-langes-eigenes-testpasswort
+```
+
+Danach führt `npm run test:e2e` zusätzlich den Login-, Dashboard- und Logout-Ablauf aus. Ohne diese Variablen wird nur dieser authentifizierte Test übersprungen; die öffentlichen Browser-Tests bleiben ausführbar.
