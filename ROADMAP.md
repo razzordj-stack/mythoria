@@ -133,8 +133,9 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 - Login, Dashboard und Logout automatisiert geprüft
 - kontrollierten Charakter-Erstellungs- und Bereinigungstest erfolgreich ausgeführt
 - 18 Browser-Tests bestanden; zwei parallele Mobil-Auth-Varianten werden bewusst übersprungen, da die App eine globale Abmeldung ausführt
-- Charaktererstellung und -bearbeitung testen
-- Inventar-, Quest-, Kampf- und Reiseabläufe testen
+- Charaktererstellung und -bearbeitung automatisiert geprüft
+- Inventar anlegen, ausrüsten und bereinigen automatisiert geprüft
+- Quest-, Kampf- und Reiseabläufe testen
 - Rollen- und Moderationszugriffe testen
 
 **Abnahmekriterium:** Kritische Benutzerwege werden automatisch gegen eine sichere Testumgebung geprüft.
