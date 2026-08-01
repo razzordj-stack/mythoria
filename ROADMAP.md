@@ -210,24 +210,25 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 - Belohnungen, Gegnerstärke und Rezeptkosten stufenweise von Stufe 2 bis 8 ausbalanciert
 - geschützte Admin-Auswertung für Inhalt, Belohnungsspannen, Gegnerstärke und Kampfdaten umgesetzt
 
-### Phase 12 – KI-Spielleiter, Fortschritt
+### Phase 12 – KI-Spielleiter, Abschluss
 
-**Status: läuft**
+**Status: abgeschlossen**
 
 - OpenAI-Konfiguration erkannt und strukturiertes Antwortformat weiterverwendet
 - konfigurierbares Tageslimit, Timeout und kontrollierte Wiederholungen ergänzt
 - optionales OpenAI-Fallback-Modell vorbereitet
 - tokenbasierte Nutzungs- und Laufzeitprotokollierung sicher in Supabase gespeichert
-- verbleibend: Live-Evaluation mehrerer aufeinanderfolgender Abenteuerzüge mit dem ausgewählten Modell
+- Produktionskonfiguration in Vercel als geschützte Variable hinterlegt und neues Produktions-Deployment erstellt
+- Live-Evaluation am 1. August 2026: drei aufeinanderfolgende Abenteuerzüge erfolgreich beantwortet und gespeichert; Szenenauswirkungen wurden verarbeitet
 
 ## Stand zum Tagesabschluss
 
 - Charakterporträt-System und Markenshop-Platzhalter sind umgesetzt.
 - `npm run lint` ist ohne Fehler durchgelaufen.
 - `npm run build` ist mit Next.js 16.2.12 erfolgreich durchgelaufen; `/dashboard/shop` ist im Build enthalten.
-- Die KI-Spielleiter-Integration bleibt entsprechend der aktuellen Entscheidung bis zum Schluss zurückgestellt.
+- Die KI-Spielleiter-Integration ist in Produktion konfiguriert und mit drei gespeicherten Live-Zügen erfolgreich geprüft.
 - Der Produktions-Health-Check ist seit dem 31. Juli 2026 grün: Anwendung und Supabase-Datenbank sind erreichbar.
 
 ## Empfohlener Wiedereinstieg
 
-Beim nächsten Arbeitstag mit **Phase 8 – Hosting und Produktionsbereitstellung** fortfahren: den manuellen Auth-Smoketest dokumentieren, anschließend Monitoring und Rollback-Ablauf festlegen. Der Markenshop bleibt bis zur Auswahl eines Anbieters und zur Festlegung echter Produkte ein klar gekennzeichneter Platzhalter.
+Beim nächsten Arbeitstag mit der **Betriebs- und Feedbackphase** fortfahren: reale Spielsitzungen auswerten, das KI-Nutzungsprotokoll beobachten sowie Monitoring und Rollback-Ablauf dokumentieren. Der Markenshop bleibt bis zur Auswahl eines Anbieters und zur Festlegung echter Produkte ein klar gekennzeichneter Platzhalter.
