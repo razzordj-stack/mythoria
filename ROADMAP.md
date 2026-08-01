@@ -229,6 +229,13 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 - Die KI-Spielleiter-Integration ist in Produktion konfiguriert und mit drei gespeicherten Live-Zügen erfolgreich geprüft.
 - Der Produktions-Health-Check ist seit dem 31. Juli 2026 grün: Anwendung und Supabase-Datenbank sind erreichbar.
 
+## Release Candidate 1.0.0-rc.1
+
+**Status: vorbereitet, Freigabe offen**
+
+- Release Notes, Betriebs-Handbuch und technische Abnahme sind dokumentiert.
+- Die öffentliche Produktfreigabe bleibt bis zur Bestätigung der rechtlichen Angaben, des externen Auth-Smoketests und der KI-Kostenlimits gesperrt.
+
 ## Empfohlener Wiedereinstieg
 
 Beim nächsten Arbeitstag mit der **Betriebs- und Feedbackphase** fortfahren: reale Spielsitzungen auswerten, das KI-Nutzungsprotokoll beobachten sowie Monitoring und Rollback-Ablauf dokumentieren. Der Markenshop bleibt bis zur Auswahl eines Anbieters und zur Festlegung echter Produkte ein klar gekennzeichneter Platzhalter.
