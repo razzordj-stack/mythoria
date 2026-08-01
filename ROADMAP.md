@@ -151,7 +151,7 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 - gemeinsame Gruppen-Sitzungen tatsächlich spielbar machen
 - Gruppenleiter- und Bereitschaftsabläufe vervollständigt: Bereitschaft, Leitungsübergabe und sicheres Entfernen von Mitgliedern
 - Echtzeitstatus für Gruppen, Mitglieder und Einladungen über Supabase Realtime ergänzt
-- Gildenrollen und Gruppenkommunikation erweitern
+- Gildenrollen erweitert: Gründer können Offiziere ernennen, zurückstufen und Mitglieder entfernen; Gruppenkommunikation bleibt als nächster Ausbauschritt offen
 
 **Abnahmekriterium:** Zwei angemeldete Benutzer können zuverlässig eine gemeinsame Gruppe bilden und synchron verwalten.
 

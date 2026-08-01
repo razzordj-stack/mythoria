@@ -16,6 +16,7 @@ type Friendship = {
 };
 type Guild = {
   id: string;
+  owner_id: string;
   name: string;
   description: string;
   join_code: string;
@@ -144,7 +145,7 @@ export default function SocialPage() {
       const [gr, gmr] = await Promise.all([
         supabase
           .from("guilds")
-          .select("id,name,description,join_code")
+          .select("id,owner_id,name,description,join_code")
           .eq("id", ownGuildResult.data.guild_id)
           .single()
           .overrideTypes<Guild, { merge: false }>(),
@@ -432,9 +433,6 @@ export default function SocialPage() {
                       {profileMap.get(member.user_id)?.display_name ??
                         "Abenteurer"}
                     </p>
-                    {member.user_id === party?.leader_id && (
-                      <MythoriaBadge variant="gold">Leitung</MythoriaBadge>
-                    )}
                   </div>
                   <p className="text-xs text-[var(--mythoria-text-muted)]">
                     {{
@@ -443,6 +441,60 @@ export default function SocialPage() {
                       member: "Mitglied",
                     }[member.role] ?? member.role}
                   </p>
+                  {guild.owner_id === userId && member.user_id !== userId && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {member.role === "member" ? (
+                        <button
+                          disabled={busy}
+                          onClick={() =>
+                            void call(
+                              "set_guild_member_role",
+                              {
+                                p_guild_id: guild.id,
+                                p_member_id: member.user_id,
+                                p_role: "officer",
+                              },
+                              "Mitglied zum Offizier ernannt.",
+                            )
+                          }
+                          className="mythoria-button-secondary"
+                        >
+                          Zum Offizier
+                        </button>
+                      ) : (
+                        <button
+                          disabled={busy}
+                          onClick={() =>
+                            void call(
+                              "set_guild_member_role",
+                              {
+                                p_guild_id: guild.id,
+                                p_member_id: member.user_id,
+                                p_role: "member",
+                              },
+                              "Offizier zum Mitglied zurückgestuft.",
+                            )
+                          }
+                          className="mythoria-button-secondary"
+                        >
+                          Zum Mitglied
+                        </button>
+                      )}
+                      <button
+                        disabled={busy}
+                        onClick={() =>
+                          void call(
+                            "remove_guild_member",
+                            { p_guild_id: guild.id, p_member_id: member.user_id },
+                            "Mitglied aus der Gilde entfernt.",
+                          )
+                        }
+                        className="mythoria-button-secondary"
+                      >
+                        Entfernen
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -548,10 +600,15 @@ export default function SocialPage() {
                   key={member.id}
                   className="rounded-xl border border-[var(--mythoria-border)] p-4"
                 >
-                  <p className="font-bold">
-                    {profileMap.get(member.user_id)?.display_name ??
-                      "Abenteurer"}
-                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-bold">
+                      {profileMap.get(member.user_id)?.display_name ??
+                        "Abenteurer"}
+                    </p>
+                    {member.user_id === party?.leader_id && (
+                      <MythoriaBadge variant="gold">Leitung</MythoriaBadge>
+                    )}
+                  </div>
                   <p className="text-xs text-[var(--mythoria-text-muted)]">
                     {characterMap.get(member.character_id)?.name ??
                       "Ausgewählter Charakter"}{" "}
