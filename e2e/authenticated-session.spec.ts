@@ -123,6 +123,35 @@ test.describe("authentifizierte Spielwege", () => {
     await itemCard.getByRole("button", { name: "Löschen" }).click();
     await expect(itemCard).toBeHidden();
 
+    await page.goto("/dashboard/world");
+    await page.getByLabel("Reisender").selectOption(characterId);
+    await page.getByRole("button", { name: "Kronenwacht" }).click();
+    const travelDialog = page.getByRole("dialog");
+    await travelDialog.getByRole("button", { name: "Hierher reisen" }).click();
+    await expect(page.getByText(`reist nun nach Kronenwacht.`)).toBeVisible();
+
+    await page.goto(`/dashboard/characters/${characterId}/quests`);
+    const questCard = page
+      .locator("article")
+      .filter({ has: page.getByRole("heading", { name: "Flüstern im Nebelwald" }) });
+    await questCard.getByRole("button", { name: "Quest annehmen" }).click();
+    await expect(
+      questCard.getByRole("button", { name: "Als erledigt markieren" }),
+    ).toBeVisible();
+    await questCard.getByRole("button", { name: "Abbrechen" }).click();
+    await expect(questCard.getByRole("button", { name: "Quest annehmen" })).toBeVisible();
+
+    await page.goto(`/dashboard/characters/${characterId}/combat`);
+    const enemyCard = page
+      .locator("article")
+      .filter({ has: page.getByRole("heading", { name: "Nebelwolf" }) });
+    await enemyCard.getByRole("button", { name: "Kampf beginnen" }).click();
+    await expect(page.getByRole("button", { name: "Fliehen" })).toBeVisible();
+    await page.getByRole("button", { name: "Fliehen" }).click();
+    await expect(
+      page.getByRole("button", { name: "Rasten und vollständig erholen" }),
+    ).toBeVisible();
+
     await page.goto("/dashboard/characters");
     const deleteButton = page.getByRole("button", {
       name: `${editedName} löschen`,
