@@ -149,7 +149,7 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 **Priorität: mittel**
 
 - gemeinsame Gruppen-Sitzungen tatsächlich spielbar machen
-- Gruppenleiter- und Bereitschaftsabläufe vervollständigen
+- Gruppenleiter- und Bereitschaftsabläufe vervollständigt: Bereitschaft, Leitungsübergabe und sicheres Entfernen von Mitgliedern
 - Echtzeitstatus für Gruppen, Mitglieder und Einladungen über Supabase Realtime ergänzt
 - Gildenrollen und Gruppenkommunikation erweitern
 

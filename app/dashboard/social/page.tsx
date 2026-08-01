@@ -1,28 +1,770 @@
 "use client";
-import {FormEvent,useCallback,useEffect,useMemo,useState} from "react";
-import {createClient} from "@/lib/supabase/client";
-import {MythoriaAlert} from "@/components/ui/MythoriaAlert";
-import {MythoriaBadge} from "@/components/ui/MythoriaBadge";
-import {MythoriaEmptyState} from "@/components/ui/MythoriaEmptyState";
-import {MythoriaPageHeader} from "@/components/ui/MythoriaPageHeader";
-import {MythoriaSpinner} from "@/components/ui/MythoriaSpinner";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { MythoriaAlert } from "@/components/ui/MythoriaAlert";
+import { MythoriaBadge } from "@/components/ui/MythoriaBadge";
+import { MythoriaEmptyState } from "@/components/ui/MythoriaEmptyState";
+import { MythoriaPageHeader } from "@/components/ui/MythoriaPageHeader";
+import { MythoriaSpinner } from "@/components/ui/MythoriaSpinner";
 
-type Profile={id:string;display_name:string;avatar_url:string|null};type Friendship={id:string;requester_id:string;addressee_id:string;status:"pending"|"accepted"|"blocked"};type Guild={id:string;name:string;description:string;join_code:string};type GuildMember={id:string;guild_id:string;user_id:string;role:string};type Character={id:string;name:string;level:number};type Party={id:string;leader_id:string;name:string;status:string};type PartyMember={id:string;party_id:string;user_id:string;character_id:string;is_ready:boolean};type Invite={id:string;party_id:string;inviter_id:string;invitee_id:string;status:string};
-export default function SocialPage(){const supabase=useMemo(()=>createClient(),[]);const[userId,setUserId]=useState("");const[friendCode,setFriendCode]=useState("");const[profiles,setProfiles]=useState<Profile[]>([]);const[friendships,setFriendships]=useState<Friendship[]>([]);const[guild,setGuild]=useState<Guild|null>(null);const[guildMembers,setGuildMembers]=useState<GuildMember[]>([]);const[characters,setCharacters]=useState<Character[]>([]);const[party,setParty]=useState<Party|null>(null);const[partyMembers,setPartyMembers]=useState<PartyMember[]>([]);const[invites,setInvites]=useState<Invite[]>([]);const[codeInput,setCodeInput]=useState("");const[guildName,setGuildName]=useState("");const[guildDescription,setGuildDescription]=useState("");const[guildCode,setGuildCode]=useState("");const[partyName,setPartyName]=useState("");const[selectedCharacter,setSelectedCharacter]=useState("");const[loading,setLoading]=useState(true);const[busy,setBusy]=useState(false);const[error,setError]=useState("");const[message,setMessage]=useState("");
- const load=useCallback(async()=>{setLoading(true);setError("");const{data:{user}}=await supabase.auth.getUser();if(!user){setError("Du bist nicht angemeldet.");setLoading(false);return;}setUserId(user.id);const[codeResult,profilesResult,friendsResult,charactersResult,ownGuildResult,partyMembershipResult,inviteResult]=await Promise.all([supabase.rpc("get_my_friend_code"),supabase.from("public_profiles").select("id,display_name,avatar_url").overrideTypes<Profile[],{merge:false}>(),supabase.from("friendships").select("id,requester_id,addressee_id,status").or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`).overrideTypes<Friendship[],{merge:false}>(),supabase.from("characters").select("id,name,level").eq("user_id",user.id).order("name").overrideTypes<Character[],{merge:false}>(),supabase.from("guild_members").select("id,guild_id,user_id,role").eq("user_id",user.id).maybeSingle().overrideTypes<GuildMember|null,{merge:false}>(),supabase.from("multiplayer_party_members").select("id,party_id,user_id,character_id,is_ready").eq("user_id",user.id).maybeSingle().overrideTypes<PartyMember|null,{merge:false}>(),supabase.from("multiplayer_party_invites").select("id,party_id,inviter_id,invitee_id,status").eq("invitee_id",user.id).eq("status","pending").overrideTypes<Invite[],{merge:false}>()]);
-  const first=codeResult.error??profilesResult.error??friendsResult.error??charactersResult.error??ownGuildResult.error??partyMembershipResult.error??inviteResult.error;if(first){setError(first.message);setLoading(false);return;}setFriendCode(String(codeResult.data??""));setProfiles(profilesResult.data??[]);setFriendships(friendsResult.data??[]);setCharacters(charactersResult.data??[]);setInvites(inviteResult.data??[]);if(!selectedCharacter&&charactersResult.data?.[0])setSelectedCharacter(charactersResult.data[0].id);
- if(ownGuildResult.data){const[gr,gmr]=await Promise.all([supabase.from("guilds").select("id,name,description,join_code").eq("id",ownGuildResult.data.guild_id).single().overrideTypes<Guild,{merge:false}>(),supabase.from("guild_members").select("id,guild_id,user_id,role").eq("guild_id",ownGuildResult.data.guild_id).order("joined_at").overrideTypes<GuildMember[],{merge:false}>()]);if(gr.error||gmr.error)setError(gr.error?.message??gmr.error?.message??"");else{setGuild(gr.data);setGuildMembers(gmr.data??[]);}}else{setGuild(null);setGuildMembers([]);}
-  if(partyMembershipResult.data){const[pr,pmr]=await Promise.all([supabase.from("multiplayer_parties").select("id,leader_id,name,status").eq("id",partyMembershipResult.data.party_id).single().overrideTypes<Party,{merge:false}>(),supabase.from("multiplayer_party_members").select("id,party_id,user_id,character_id,is_ready").eq("party_id",partyMembershipResult.data.party_id).order("joined_at").overrideTypes<PartyMember[],{merge:false}>()]);if(pr.error||pmr.error)setError(pr.error?.message??pmr.error?.message??"");else{setParty(pr.data);setPartyMembers(pmr.data??[]);}}else{setParty(null);setPartyMembers([]);}setLoading(false);
- },[selectedCharacter,supabase]);useEffect(()=>{const timer=window.setTimeout(()=>void load(),0);return()=>window.clearTimeout(timer)},[load]);
- useEffect(()=>{const channel=supabase.channel("social-party-live").on("postgres_changes",{event:"*",schema:"public",table:"multiplayer_parties"},()=>void load()).on("postgres_changes",{event:"*",schema:"public",table:"multiplayer_party_members"},()=>void load()).on("postgres_changes",{event:"*",schema:"public",table:"multiplayer_party_invites"},()=>void load()).subscribe();return()=>{void supabase.removeChannel(channel)}},[load,supabase]);
- async function call(name:string,args:Record<string,unknown>,success:string){setBusy(true);setError("");setMessage("");const{error:rpcError}=await supabase.rpc(name,args);if(rpcError)setError(socialError(rpcError.message));else{setMessage(success);await load();}setBusy(false);}
- function sendFriend(event:FormEvent){event.preventDefault();void call("send_friend_request",{p_friend_code:codeInput},"Freundschaftsanfrage gesendet.");setCodeInput("");}
- const profileMap=new Map(profiles.map(profile=>[profile.id,profile]));const accepted=friendships.filter(item=>item.status==="accepted");const incoming=friendships.filter(item=>item.status==="pending"&&item.addressee_id===userId);const outgoing=friendships.filter(item=>item.status==="pending"&&item.requester_id===userId);const friendIds=accepted.map(item=>item.requester_id===userId?item.addressee_id:item.requester_id);const characterMap=new Map(characters.map(character=>[character.id,character]));
- if(loading)return <main className="mythoria-page flex min-h-screen items-center justify-center"><MythoriaSpinner size="large"/></main>;
- return <main className="mythoria-page mx-auto max-w-6xl px-4 py-8 sm:px-6"><MythoriaPageHeader eyebrow="GEMEINSCHAFT" title="Freunde, Gilden und Gruppen" description="Verbinde dich über sichere Freundescodes und bereite gemeinsame Abenteuer vor."/>{error&&<MythoriaAlert variant="error" className="mt-6">{error}</MythoriaAlert>}{message&&<MythoriaAlert variant="success" className="mt-6">{message}</MythoriaAlert>}
- <section className="mt-8 grid gap-6 lg:grid-cols-[.8fr_1.2fr]"><div className="mythoria-panel p-6"><p className="text-xs font-bold tracking-[.18em] text-[var(--mythoria-green-bright)]">DEIN FREUNDESCODE</p><p className="mt-3 font-mono text-3xl font-bold tracking-[.2em] text-[var(--mythoria-gold-light)]">{friendCode}</p><p className="mt-3 text-xs text-[var(--mythoria-text-muted)]">Teile nur diesen Code – deine E-Mail-Adresse bleibt verborgen.</p><form onSubmit={sendFriend} className="mt-6 flex gap-2"><input required minLength={8} maxLength={8} value={codeInput} onChange={event=>setCodeInput(event.target.value.toUpperCase())} placeholder="FREUNDESCODE" className="mythoria-input"/><button disabled={busy} className="mythoria-button-primary">Anfragen</button></form></div><div><h2 className="mythoria-heading text-2xl">Freundschaften</h2>{incoming.map(item=><FriendRow key={item.id} name={profileMap.get(item.requester_id)?.display_name??"Abenteurer"} status="Anfrage erhalten" actions={<><button disabled={busy} onClick={()=>void call("respond_friend_request",{p_friendship_id:item.id,p_accept:true},"Anfrage angenommen.")} className="mythoria-button-primary">Annehmen</button><button disabled={busy} onClick={()=>void call("respond_friend_request",{p_friendship_id:item.id,p_accept:false},"Anfrage abgelehnt.")} className="mythoria-button-secondary">Ablehnen</button></>}/>) }{accepted.map(item=>{const other=item.requester_id===userId?item.addressee_id:item.requester_id;return <FriendRow key={item.id} name={profileMap.get(other)?.display_name??"Abenteurer"} status="Freund" actions={<button disabled={busy} onClick={()=>void call("remove_friendship",{p_friendship_id:item.id},"Freundschaft entfernt.")} className="mythoria-button-secondary">Entfernen</button>}/>})}{outgoing.map(item=><FriendRow key={item.id} name={profileMap.get(item.addressee_id)?.display_name??"Abenteurer"} status="Anfrage gesendet"/>)}{friendships.length===0&&<MythoriaEmptyState className="mt-4" title="Noch keine Kontakte" description="Sende mit einem achtstelligen Freundescode deine erste Anfrage."/>}</div></section>
- <section className="mt-12 border-t border-[var(--mythoria-border)] pt-10"><h2 className="mythoria-heading text-2xl">Gilde</h2>{guild?<div className="mythoria-panel mt-5 p-6"><div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><h3 className="mythoria-subheading text-2xl">{guild.name}</h3><p className="mt-2 text-sm text-[var(--mythoria-text-muted)]">{guild.description||"Keine Beschreibung."}</p><p className="mt-3 text-xs text-[var(--mythoria-gold-light)]">Beitrittscode: <strong className="font-mono tracking-widest">{guild.join_code}</strong></p></div><button disabled={busy} onClick={()=>void call("leave_guild",{},"Gilde verlassen.")} className="mythoria-button-secondary">Gilde verlassen</button></div><div className="mt-6 grid gap-2 sm:grid-cols-2">{guildMembers.map(member=><div key={member.id} className="rounded-xl border border-[var(--mythoria-border)] p-3"><p className="font-bold">{profileMap.get(member.user_id)?.display_name??"Abenteurer"}</p><p className="text-xs text-[var(--mythoria-text-muted)]">{{owner:"Gründer",officer:"Offizier",member:"Mitglied"}[member.role]??member.role}</p></div>)}</div></div>:<div className="mt-5 grid gap-5 md:grid-cols-2"><form onSubmit={event=>{event.preventDefault();void call("create_guild",{p_name:guildName,p_description:guildDescription},"Gilde gegründet.")}} className="mythoria-panel space-y-4 p-5"><h3 className="mythoria-subheading text-xl">Gilde gründen</h3><input required minLength={3} maxLength={50} value={guildName} onChange={event=>setGuildName(event.target.value)} placeholder="Gildenname" className="mythoria-input"/><textarea maxLength={500} value={guildDescription} onChange={event=>setGuildDescription(event.target.value)} placeholder="Beschreibung" className="mythoria-textarea"/><button disabled={busy} className="mythoria-button-primary">Gründen</button></form><form onSubmit={event=>{event.preventDefault();void call("join_guild",{p_join_code:guildCode},"Gilde beigetreten.")}} className="mythoria-panel space-y-4 p-5"><h3 className="mythoria-subheading text-xl">Gilde beitreten</h3><input required minLength={8} maxLength={8} value={guildCode} onChange={event=>setGuildCode(event.target.value.toUpperCase())} placeholder="BEITRITTSCODE" className="mythoria-input"/><button disabled={busy} className="mythoria-button-primary">Beitreten</button></form></div>}</section>
- <section className="mt-12 border-t border-[var(--mythoria-border)] pt-10"><h2 className="mythoria-heading text-2xl">Abenteuergruppe</h2><p className="mt-2 text-sm text-[var(--mythoria-text-muted)]">Bis zu vier Spieler können ihre Charaktere vorbereiten. Der gemeinsame KI-Lauf wird später aktiviert.</p>{party?<div className="mythoria-panel mt-5 p-6"><div className="flex items-center justify-between gap-4"><div><h3 className="mythoria-subheading text-2xl">{party.name}</h3><MythoriaBadge variant={party.status==="ready"?"success":"neutral"}>{party.status==="ready"?"Bereit":"In Vorbereitung"}</MythoriaBadge></div><button disabled={busy} onClick={()=>void call("leave_multiplayer_party",{p_party_id:party.id},"Gruppe verlassen.")} className="mythoria-button-secondary">{party.leader_id===userId?"Gruppe auflösen":"Verlassen"}</button></div><div className="mt-5 grid gap-3 md:grid-cols-2">{partyMembers.map(member=><div key={member.id} className="rounded-xl border border-[var(--mythoria-border)] p-4"><p className="font-bold">{profileMap.get(member.user_id)?.display_name??"Abenteurer"}</p><p className="text-xs text-[var(--mythoria-text-muted)]">{characterMap.get(member.character_id)?.name??"Ausgewählter Charakter"} · {member.is_ready?"Bereit":"Nicht bereit"}</p>{member.user_id===userId&&<button disabled={busy} onClick={()=>void call("set_party_ready",{p_party_id:party.id,p_ready:!member.is_ready},"Bereitschaft aktualisiert.")} className="mythoria-button-secondary mt-3">{member.is_ready?"Nicht bereit":"Bereit"}</button>}</div>)}</div>{party.leader_id===userId&&friendIds.length>0&&<div className="mt-5 border-t border-[var(--mythoria-border)] pt-5"><p className="text-sm font-bold">Freunde einladen</p><div className="mt-3 flex flex-wrap gap-2">{friendIds.map(friendId=><button key={friendId} disabled={busy||partyMembers.some(member=>member.user_id===friendId)} onClick={()=>void call("invite_friend_to_party",{p_party_id:party.id,p_friend_id:friendId},"Einladung gesendet.")} className="mythoria-button-secondary">{profileMap.get(friendId)?.display_name??"Freund"}</button>)}</div></div>}</div>:<form onSubmit={event=>{event.preventDefault();void call("create_multiplayer_party",{p_character_id:selectedCharacter,p_name:partyName},"Abenteuergruppe erstellt.")}} className="mythoria-panel mt-5 grid gap-4 p-5 md:grid-cols-[1fr_1fr_auto]"><input required value={partyName} onChange={event=>setPartyName(event.target.value)} placeholder="Gruppenname" className="mythoria-input"/><select required value={selectedCharacter} onChange={event=>setSelectedCharacter(event.target.value)} className="mythoria-select"><option value="">Charakter wählen</option>{characters.map(character=><option key={character.id} value={character.id}>{character.name} · Stufe {character.level}</option>)}</select><button disabled={busy||!selectedCharacter} className="mythoria-button-primary">Gruppe erstellen</button></form>}
- {invites.length>0&&<div className="mt-6"><h3 className="mythoria-subheading text-xl">Gruppeneinladungen</h3>{invites.map(invite=><div key={invite.id} className="mythoria-panel mt-3 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><p>Einladung von {profileMap.get(invite.inviter_id)?.display_name??"einem Freund"}</p><div className="flex gap-2"><button disabled={busy||!selectedCharacter||!!party} onClick={()=>void call("respond_party_invite",{p_invite_id:invite.id,p_accept:true,p_character_id:selectedCharacter},"Gruppe beigetreten.")} className="mythoria-button-primary">Annehmen</button><button disabled={busy} onClick={()=>void call("respond_party_invite",{p_invite_id:invite.id,p_accept:false,p_character_id:null},"Einladung abgelehnt.")} className="mythoria-button-secondary">Ablehnen</button></div></div>)}</div>}</section></main>}
-function FriendRow({name,status,actions}:{name:string;status:string;actions?:React.ReactNode}){return <div className="mythoria-card mt-3 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold">{name}</p><p className="text-xs text-[var(--mythoria-text-muted)]">{status}</p></div>{actions&&<div className="flex flex-wrap gap-2">{actions}</div>}</div>}
-function socialError(message:string){if(message.includes("already exists"))return"Diese Freundschaft oder Anfrage existiert bereits.";if(message.includes("profile not found"))return"Zu diesem Code wurde kein Profil gefunden.";if(message.includes("already in guild"))return"Du bist bereits Mitglied einer Gilde.";if(message.includes("guild not found"))return"Der Gildencode ist ungültig.";if(message.includes("party is full"))return"Diese Gruppe ist bereits voll.";if(message.includes("already in party"))return"Du bist bereits Mitglied einer aktiven Gruppe.";return message}
+type Profile = { id: string; display_name: string; avatar_url: string | null };
+type Friendship = {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: "pending" | "accepted" | "blocked";
+};
+type Guild = {
+  id: string;
+  name: string;
+  description: string;
+  join_code: string;
+};
+type GuildMember = {
+  id: string;
+  guild_id: string;
+  user_id: string;
+  role: string;
+};
+type Character = { id: string; name: string; level: number };
+type Party = { id: string; leader_id: string; name: string; status: string };
+type PartyMember = {
+  id: string;
+  party_id: string;
+  user_id: string;
+  character_id: string;
+  is_ready: boolean;
+};
+type Invite = {
+  id: string;
+  party_id: string;
+  inviter_id: string;
+  invitee_id: string;
+  status: string;
+};
+export default function SocialPage() {
+  const supabase = useMemo(() => createClient(), []);
+  const [userId, setUserId] = useState("");
+  const [friendCode, setFriendCode] = useState("");
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [friendships, setFriendships] = useState<Friendship[]>([]);
+  const [guild, setGuild] = useState<Guild | null>(null);
+  const [guildMembers, setGuildMembers] = useState<GuildMember[]>([]);
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [party, setParty] = useState<Party | null>(null);
+  const [partyMembers, setPartyMembers] = useState<PartyMember[]>([]);
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [codeInput, setCodeInput] = useState("");
+  const [guildName, setGuildName] = useState("");
+  const [guildDescription, setGuildDescription] = useState("");
+  const [guildCode, setGuildCode] = useState("");
+  const [partyName, setPartyName] = useState("");
+  const [selectedCharacter, setSelectedCharacter] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setError("Du bist nicht angemeldet.");
+      setLoading(false);
+      return;
+    }
+    setUserId(user.id);
+    const [
+      codeResult,
+      profilesResult,
+      friendsResult,
+      charactersResult,
+      ownGuildResult,
+      partyMembershipResult,
+      inviteResult,
+    ] = await Promise.all([
+      supabase.rpc("get_my_friend_code"),
+      supabase
+        .from("public_profiles")
+        .select("id,display_name,avatar_url")
+        .overrideTypes<Profile[], { merge: false }>(),
+      supabase
+        .from("friendships")
+        .select("id,requester_id,addressee_id,status")
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+        .overrideTypes<Friendship[], { merge: false }>(),
+      supabase
+        .from("characters")
+        .select("id,name,level")
+        .eq("user_id", user.id)
+        .order("name")
+        .overrideTypes<Character[], { merge: false }>(),
+      supabase
+        .from("guild_members")
+        .select("id,guild_id,user_id,role")
+        .eq("user_id", user.id)
+        .maybeSingle()
+        .overrideTypes<GuildMember | null, { merge: false }>(),
+      supabase
+        .from("multiplayer_party_members")
+        .select("id,party_id,user_id,character_id,is_ready")
+        .eq("user_id", user.id)
+        .maybeSingle()
+        .overrideTypes<PartyMember | null, { merge: false }>(),
+      supabase
+        .from("multiplayer_party_invites")
+        .select("id,party_id,inviter_id,invitee_id,status")
+        .eq("invitee_id", user.id)
+        .eq("status", "pending")
+        .overrideTypes<Invite[], { merge: false }>(),
+    ]);
+    const first =
+      codeResult.error ??
+      profilesResult.error ??
+      friendsResult.error ??
+      charactersResult.error ??
+      ownGuildResult.error ??
+      partyMembershipResult.error ??
+      inviteResult.error;
+    if (first) {
+      setError(first.message);
+      setLoading(false);
+      return;
+    }
+    setFriendCode(String(codeResult.data ?? ""));
+    setProfiles(profilesResult.data ?? []);
+    setFriendships(friendsResult.data ?? []);
+    setCharacters(charactersResult.data ?? []);
+    setInvites(inviteResult.data ?? []);
+    if (!selectedCharacter && charactersResult.data?.[0])
+      setSelectedCharacter(charactersResult.data[0].id);
+    if (ownGuildResult.data) {
+      const [gr, gmr] = await Promise.all([
+        supabase
+          .from("guilds")
+          .select("id,name,description,join_code")
+          .eq("id", ownGuildResult.data.guild_id)
+          .single()
+          .overrideTypes<Guild, { merge: false }>(),
+        supabase
+          .from("guild_members")
+          .select("id,guild_id,user_id,role")
+          .eq("guild_id", ownGuildResult.data.guild_id)
+          .order("joined_at")
+          .overrideTypes<GuildMember[], { merge: false }>(),
+      ]);
+      if (gr.error || gmr.error)
+        setError(gr.error?.message ?? gmr.error?.message ?? "");
+      else {
+        setGuild(gr.data);
+        setGuildMembers(gmr.data ?? []);
+      }
+    } else {
+      setGuild(null);
+      setGuildMembers([]);
+    }
+    if (partyMembershipResult.data) {
+      const [pr, pmr] = await Promise.all([
+        supabase
+          .from("multiplayer_parties")
+          .select("id,leader_id,name,status")
+          .eq("id", partyMembershipResult.data.party_id)
+          .single()
+          .overrideTypes<Party, { merge: false }>(),
+        supabase
+          .from("multiplayer_party_members")
+          .select("id,party_id,user_id,character_id,is_ready")
+          .eq("party_id", partyMembershipResult.data.party_id)
+          .order("joined_at")
+          .overrideTypes<PartyMember[], { merge: false }>(),
+      ]);
+      if (pr.error || pmr.error)
+        setError(pr.error?.message ?? pmr.error?.message ?? "");
+      else {
+        setParty(pr.data);
+        setPartyMembers(pmr.data ?? []);
+      }
+    } else {
+      setParty(null);
+      setPartyMembers([]);
+    }
+    setLoading(false);
+  }, [selectedCharacter, supabase]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+  useEffect(() => {
+    const channel = supabase
+      .channel("social-party-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "multiplayer_parties" },
+        () => void load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "multiplayer_party_members" },
+        () => void load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "multiplayer_party_invites" },
+        () => void load(),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [load, supabase]);
+  async function call(
+    name: string,
+    args: Record<string, unknown>,
+    success: string,
+  ) {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    const { error: rpcError } = await supabase.rpc(name, args);
+    if (rpcError) setError(socialError(rpcError.message));
+    else {
+      setMessage(success);
+      await load();
+    }
+    setBusy(false);
+  }
+  function sendFriend(event: FormEvent) {
+    event.preventDefault();
+    void call(
+      "send_friend_request",
+      { p_friend_code: codeInput },
+      "Freundschaftsanfrage gesendet.",
+    );
+    setCodeInput("");
+  }
+  const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
+  const accepted = friendships.filter((item) => item.status === "accepted");
+  const incoming = friendships.filter(
+    (item) => item.status === "pending" && item.addressee_id === userId,
+  );
+  const outgoing = friendships.filter(
+    (item) => item.status === "pending" && item.requester_id === userId,
+  );
+  const friendIds = accepted.map((item) =>
+    item.requester_id === userId ? item.addressee_id : item.requester_id,
+  );
+  const characterMap = new Map(
+    characters.map((character) => [character.id, character]),
+  );
+  if (loading)
+    return (
+      <main className="mythoria-page flex min-h-screen items-center justify-center">
+        <MythoriaSpinner size="large" />
+      </main>
+    );
+  return (
+    <main className="mythoria-page mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <MythoriaPageHeader
+        eyebrow="GEMEINSCHAFT"
+        title="Freunde, Gilden und Gruppen"
+        description="Verbinde dich über sichere Freundescodes und bereite gemeinsame Abenteuer vor."
+      />
+      {error && (
+        <MythoriaAlert variant="error" className="mt-6">
+          {error}
+        </MythoriaAlert>
+      )}
+      {message && (
+        <MythoriaAlert variant="success" className="mt-6">
+          {message}
+        </MythoriaAlert>
+      )}
+      <section className="mt-8 grid gap-6 lg:grid-cols-[.8fr_1.2fr]">
+        <div className="mythoria-panel p-6">
+          <p className="text-xs font-bold tracking-[.18em] text-[var(--mythoria-green-bright)]">
+            DEIN FREUNDESCODE
+          </p>
+          <p className="mt-3 font-mono text-3xl font-bold tracking-[.2em] text-[var(--mythoria-gold-light)]">
+            {friendCode}
+          </p>
+          <p className="mt-3 text-xs text-[var(--mythoria-text-muted)]">
+            Teile nur diesen Code – deine E-Mail-Adresse bleibt verborgen.
+          </p>
+          <form onSubmit={sendFriend} className="mt-6 flex gap-2">
+            <input
+              required
+              minLength={8}
+              maxLength={8}
+              value={codeInput}
+              onChange={(event) =>
+                setCodeInput(event.target.value.toUpperCase())
+              }
+              placeholder="FREUNDESCODE"
+              className="mythoria-input"
+            />
+            <button disabled={busy} className="mythoria-button-primary">
+              Anfragen
+            </button>
+          </form>
+        </div>
+        <div>
+          <h2 className="mythoria-heading text-2xl">Freundschaften</h2>
+          {incoming.map((item) => (
+            <FriendRow
+              key={item.id}
+              name={
+                profileMap.get(item.requester_id)?.display_name ?? "Abenteurer"
+              }
+              status="Anfrage erhalten"
+              actions={
+                <>
+                  <button
+                    disabled={busy}
+                    onClick={() =>
+                      void call(
+                        "respond_friend_request",
+                        { p_friendship_id: item.id, p_accept: true },
+                        "Anfrage angenommen.",
+                      )
+                    }
+                    className="mythoria-button-primary"
+                  >
+                    Annehmen
+                  </button>
+                  <button
+                    disabled={busy}
+                    onClick={() =>
+                      void call(
+                        "respond_friend_request",
+                        { p_friendship_id: item.id, p_accept: false },
+                        "Anfrage abgelehnt.",
+                      )
+                    }
+                    className="mythoria-button-secondary"
+                  >
+                    Ablehnen
+                  </button>
+                </>
+              }
+            />
+          ))}
+          {accepted.map((item) => {
+            const other =
+              item.requester_id === userId
+                ? item.addressee_id
+                : item.requester_id;
+            return (
+              <FriendRow
+                key={item.id}
+                name={profileMap.get(other)?.display_name ?? "Abenteurer"}
+                status="Freund"
+                actions={
+                  <button
+                    disabled={busy}
+                    onClick={() =>
+                      void call(
+                        "remove_friendship",
+                        { p_friendship_id: item.id },
+                        "Freundschaft entfernt.",
+                      )
+                    }
+                    className="mythoria-button-secondary"
+                  >
+                    Entfernen
+                  </button>
+                }
+              />
+            );
+          })}
+          {outgoing.map((item) => (
+            <FriendRow
+              key={item.id}
+              name={
+                profileMap.get(item.addressee_id)?.display_name ?? "Abenteurer"
+              }
+              status="Anfrage gesendet"
+            />
+          ))}
+          {friendships.length === 0 && (
+            <MythoriaEmptyState
+              className="mt-4"
+              title="Noch keine Kontakte"
+              description="Sende mit einem achtstelligen Freundescode deine erste Anfrage."
+            />
+          )}
+        </div>
+      </section>
+      <section className="mt-12 border-t border-[var(--mythoria-border)] pt-10">
+        <h2 className="mythoria-heading text-2xl">Gilde</h2>
+        {guild ? (
+          <div className="mythoria-panel mt-5 p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="mythoria-subheading text-2xl">{guild.name}</h3>
+                <p className="mt-2 text-sm text-[var(--mythoria-text-muted)]">
+                  {guild.description || "Keine Beschreibung."}
+                </p>
+                <p className="mt-3 text-xs text-[var(--mythoria-gold-light)]">
+                  Beitrittscode:{" "}
+                  <strong className="font-mono tracking-widest">
+                    {guild.join_code}
+                  </strong>
+                </p>
+              </div>
+              <button
+                disabled={busy}
+                onClick={() => void call("leave_guild", {}, "Gilde verlassen.")}
+                className="mythoria-button-secondary"
+              >
+                Gilde verlassen
+              </button>
+            </div>
+            <div className="mt-6 grid gap-2 sm:grid-cols-2">
+              {guildMembers.map((member) => (
+                <div
+                  key={member.id}
+                  className="rounded-xl border border-[var(--mythoria-border)] p-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-bold">
+                      {profileMap.get(member.user_id)?.display_name ??
+                        "Abenteurer"}
+                    </p>
+                    {member.user_id === party?.leader_id && (
+                      <MythoriaBadge variant="gold">Leitung</MythoriaBadge>
+                    )}
+                  </div>
+                  <p className="text-xs text-[var(--mythoria-text-muted)]">
+                    {{
+                      owner: "Gründer",
+                      officer: "Offizier",
+                      member: "Mitglied",
+                    }[member.role] ?? member.role}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="mt-5 grid gap-5 md:grid-cols-2">
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void call(
+                  "create_guild",
+                  { p_name: guildName, p_description: guildDescription },
+                  "Gilde gegründet.",
+                );
+              }}
+              className="mythoria-panel space-y-4 p-5"
+            >
+              <h3 className="mythoria-subheading text-xl">Gilde gründen</h3>
+              <input
+                required
+                minLength={3}
+                maxLength={50}
+                value={guildName}
+                onChange={(event) => setGuildName(event.target.value)}
+                placeholder="Gildenname"
+                className="mythoria-input"
+              />
+              <textarea
+                maxLength={500}
+                value={guildDescription}
+                onChange={(event) => setGuildDescription(event.target.value)}
+                placeholder="Beschreibung"
+                className="mythoria-textarea"
+              />
+              <button disabled={busy} className="mythoria-button-primary">
+                Gründen
+              </button>
+            </form>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void call(
+                  "join_guild",
+                  { p_join_code: guildCode },
+                  "Gilde beigetreten.",
+                );
+              }}
+              className="mythoria-panel space-y-4 p-5"
+            >
+              <h3 className="mythoria-subheading text-xl">Gilde beitreten</h3>
+              <input
+                required
+                minLength={8}
+                maxLength={8}
+                value={guildCode}
+                onChange={(event) =>
+                  setGuildCode(event.target.value.toUpperCase())
+                }
+                placeholder="BEITRITTSCODE"
+                className="mythoria-input"
+              />
+              <button disabled={busy} className="mythoria-button-primary">
+                Beitreten
+              </button>
+            </form>
+          </div>
+        )}
+      </section>
+      <section className="mt-12 border-t border-[var(--mythoria-border)] pt-10">
+        <h2 className="mythoria-heading text-2xl">Abenteuergruppe</h2>
+        <p className="mt-2 text-sm text-[var(--mythoria-text-muted)]">
+          Bis zu vier Spieler können ihre Charaktere vorbereiten. Der gemeinsame
+          KI-Lauf wird später aktiviert.
+        </p>
+        {party ? (
+          <div className="mythoria-panel mt-5 p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="mythoria-subheading text-2xl">{party.name}</h3>
+                <MythoriaBadge
+                  variant={party.status === "ready" ? "success" : "neutral"}
+                >
+                  {party.status === "ready" ? "Bereit" : "In Vorbereitung"}
+                </MythoriaBadge>
+              </div>
+              <button
+                disabled={busy}
+                onClick={() =>
+                  void call(
+                    "leave_multiplayer_party",
+                    { p_party_id: party.id },
+                    "Gruppe verlassen.",
+                  )
+                }
+                className="mythoria-button-secondary"
+              >
+                {party.leader_id === userId ? "Gruppe auflösen" : "Verlassen"}
+              </button>
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              {partyMembers.map((member) => (
+                <div
+                  key={member.id}
+                  className="rounded-xl border border-[var(--mythoria-border)] p-4"
+                >
+                  <p className="font-bold">
+                    {profileMap.get(member.user_id)?.display_name ??
+                      "Abenteurer"}
+                  </p>
+                  <p className="text-xs text-[var(--mythoria-text-muted)]">
+                    {characterMap.get(member.character_id)?.name ??
+                      "Ausgewählter Charakter"}{" "}
+                    · {member.is_ready ? "Bereit" : "Nicht bereit"}
+                  </p>
+                  {member.user_id === userId && (
+                    <button
+                      disabled={busy}
+                      onClick={() =>
+                        void call(
+                          "set_party_ready",
+                          { p_party_id: party.id, p_ready: !member.is_ready },
+                          "Bereitschaft aktualisiert.",
+                        )
+                      }
+                      className="mythoria-button-secondary mt-3"
+                    >
+                      {member.is_ready ? "Nicht bereit" : "Bereit"}
+                    </button>
+                  )}
+                  {party?.leader_id === userId && member.user_id !== userId && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        disabled={busy}
+                        onClick={() =>
+                          void call(
+                            "transfer_party_leadership",
+                            {
+                              p_party_id: party.id,
+                              p_new_leader_id: member.user_id,
+                            },
+                            "Gruppenleitung übergeben.",
+                          )
+                        }
+                        className="mythoria-button-secondary"
+                      >
+                        Leitung übergeben
+                      </button>
+                      <button
+                        disabled={busy}
+                        onClick={() =>
+                          void call(
+                            "remove_party_member",
+                            { p_party_id: party.id, p_member_id: member.user_id },
+                            "Mitglied aus der Gruppe entfernt.",
+                          )
+                        }
+                        className="mythoria-button-secondary"
+                      >
+                        Entfernen
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {party.leader_id === userId && friendIds.length > 0 && (
+              <div className="mt-5 border-t border-[var(--mythoria-border)] pt-5">
+                <p className="text-sm font-bold">Freunde einladen</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {friendIds.map((friendId) => (
+                    <button
+                      key={friendId}
+                      disabled={
+                        busy ||
+                        partyMembers.some(
+                          (member) => member.user_id === friendId,
+                        )
+                      }
+                      onClick={() =>
+                        void call(
+                          "invite_friend_to_party",
+                          { p_party_id: party.id, p_friend_id: friendId },
+                          "Einladung gesendet.",
+                        )
+                      }
+                      className="mythoria-button-secondary"
+                    >
+                      {profileMap.get(friendId)?.display_name ?? "Freund"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void call(
+                "create_multiplayer_party",
+                { p_character_id: selectedCharacter, p_name: partyName },
+                "Abenteuergruppe erstellt.",
+              );
+            }}
+            className="mythoria-panel mt-5 grid gap-4 p-5 md:grid-cols-[1fr_1fr_auto]"
+          >
+            <input
+              required
+              value={partyName}
+              onChange={(event) => setPartyName(event.target.value)}
+              placeholder="Gruppenname"
+              className="mythoria-input"
+            />
+            <select
+              required
+              value={selectedCharacter}
+              onChange={(event) => setSelectedCharacter(event.target.value)}
+              className="mythoria-select"
+            >
+              <option value="">Charakter wählen</option>
+              {characters.map((character) => (
+                <option key={character.id} value={character.id}>
+                  {character.name} · Stufe {character.level}
+                </option>
+              ))}
+            </select>
+            <button
+              disabled={busy || !selectedCharacter}
+              className="mythoria-button-primary"
+            >
+              Gruppe erstellen
+            </button>
+          </form>
+        )}
+        {invites.length > 0 && (
+          <div className="mt-6">
+            <h3 className="mythoria-subheading text-xl">Gruppeneinladungen</h3>
+            {invites.map((invite) => (
+              <div
+                key={invite.id}
+                className="mythoria-panel mt-3 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <p>
+                  Einladung von{" "}
+                  {profileMap.get(invite.inviter_id)?.display_name ??
+                    "einem Freund"}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    disabled={busy || !selectedCharacter || !!party}
+                    onClick={() =>
+                      void call(
+                        "respond_party_invite",
+                        {
+                          p_invite_id: invite.id,
+                          p_accept: true,
+                          p_character_id: selectedCharacter,
+                        },
+                        "Gruppe beigetreten.",
+                      )
+                    }
+                    className="mythoria-button-primary"
+                  >
+                    Annehmen
+                  </button>
+                  <button
+                    disabled={busy}
+                    onClick={() =>
+                      void call(
+                        "respond_party_invite",
+                        {
+                          p_invite_id: invite.id,
+                          p_accept: false,
+                          p_character_id: null,
+                        },
+                        "Einladung abgelehnt.",
+                      )
+                    }
+                    className="mythoria-button-secondary"
+                  >
+                    Ablehnen
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
+  );
+}
+function FriendRow({
+  name,
+  status,
+  actions,
+}: {
+  name: string;
+  status: string;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="mythoria-card mt-3 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-bold">{name}</p>
+        <p className="text-xs text-[var(--mythoria-text-muted)]">{status}</p>
+      </div>
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+    </div>
+  );
+}
+function socialError(message: string) {
+  if (message.includes("already exists"))
+    return "Diese Freundschaft oder Anfrage existiert bereits.";
+  if (message.includes("profile not found"))
+    return "Zu diesem Code wurde kein Profil gefunden.";
+  if (message.includes("already in guild"))
+    return "Du bist bereits Mitglied einer Gilde.";
+  if (message.includes("guild not found"))
+    return "Der Gildencode ist ungültig.";
+  if (message.includes("party is full"))
+    return "Diese Gruppe ist bereits voll.";
+  if (message.includes("already in party"))
+    return "Du bist bereits Mitglied einer aktiven Gruppe.";
+  return message;
+}
