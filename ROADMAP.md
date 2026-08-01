@@ -192,6 +192,15 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 
 **Abnahmekriterium:** Mehrere aufeinanderfolgende Abenteuerzüge werden zuverlässig, sicher und ohne Datenverlust beantwortet und gespeichert.
 
+### Phase 10 – Abschluss
+
+**Status: abgeschlossen**
+
+- gemeinsame Spielsitzung mit gemeinsamer Ortsprüfung und Start durch die Gruppenleitung
+- direkter Einstieg ins Live-Spielbrett der Sitzung
+- Echtzeit-Gruppenchat für aktive Spielsitzungen
+- Realtime-Synchronisierung für Sitzungen und Nachrichten
+
 ## Stand zum Tagesabschluss
 
 - Charakterporträt-System und Markenshop-Platzhalter sind umgesetzt.

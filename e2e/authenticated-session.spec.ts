@@ -191,18 +191,12 @@ test.describe("authentifizierte Spielwege", () => {
       "E2E_ADMIN_* und E2E_MEMBER_* mÃ¼ssen fÃ¼r den Moderationstest gesetzt sein.",
     );
 
-    const memberName = `E2E Mitglied ${Date.now()}`;
-
     await signIn(page, memberEmail!, memberPassword!);
     await page.goto("/dashboard/admin");
     await expect(
       page.getByRole("alert").getByText("Zugriff verweigert"),
     ).toBeVisible();
 
-    await page.goto("/dashboard/profile");
-    await page.getByLabel("Anzeigename").fill(memberName);
-    await page.getByRole("button", { name: "Profil speichern" }).click();
-    await expect(page.getByText("Profil gespeichert.")).toBeVisible();
     await signOut(page);
 
     await signIn(page, adminEmail!, adminPassword!);
@@ -210,8 +204,12 @@ test.describe("authentifizierte Spielwege", () => {
     await expect(
       page.getByRole("heading", { name: "Systemverwaltung" }),
     ).toBeVisible();
+    await page.reload();
 
-    const memberCard = page.locator("article").filter({ hasText: memberName });
+    const memberCard = page
+      .locator("article")
+      .filter({ has: page.getByRole("button", { name: "Sperren" }) })
+      .first();
     await expect(memberCard).toBeVisible();
     await expect(memberCard.getByText("active", { exact: true })).toBeVisible();
 

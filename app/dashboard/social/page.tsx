@@ -6,6 +6,7 @@ import { MythoriaBadge } from "@/components/ui/MythoriaBadge";
 import { MythoriaEmptyState } from "@/components/ui/MythoriaEmptyState";
 import { MythoriaPageHeader } from "@/components/ui/MythoriaPageHeader";
 import { MythoriaSpinner } from "@/components/ui/MythoriaSpinner";
+import { PartySessionPanel } from "@/components/social/PartySessionPanel";
 
 type Profile = { id: string; display_name: string; avatar_url: string | null };
 type Friendship = {
@@ -485,7 +486,10 @@ export default function SocialPage() {
                         onClick={() =>
                           void call(
                             "remove_guild_member",
-                            { p_guild_id: guild.id, p_member_id: member.user_id },
+                            {
+                              p_guild_id: guild.id,
+                              p_member_id: member.user_id,
+                            },
                             "Mitglied aus der Gilde entfernt.",
                           )
                         }
@@ -652,7 +656,10 @@ export default function SocialPage() {
                         onClick={() =>
                           void call(
                             "remove_party_member",
-                            { p_party_id: party.id, p_member_id: member.user_id },
+                            {
+                              p_party_id: party.id,
+                              p_member_id: member.user_id,
+                            },
                             "Mitglied aus der Gruppe entfernt.",
                           )
                         }
@@ -693,6 +700,11 @@ export default function SocialPage() {
                 </div>
               </div>
             )}
+            <PartySessionPanel
+              partyId={party.id}
+              partyStatus={party.status}
+              isLeader={party.leader_id === userId}
+            />
           </div>
         ) : (
           <form
