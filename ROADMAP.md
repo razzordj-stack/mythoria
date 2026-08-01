@@ -210,6 +210,16 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 - Belohnungen, Gegnerstärke und Rezeptkosten stufenweise von Stufe 2 bis 8 ausbalanciert
 - geschützte Admin-Auswertung für Inhalt, Belohnungsspannen, Gegnerstärke und Kampfdaten umgesetzt
 
+### Phase 12 – KI-Spielleiter, Fortschritt
+
+**Status: läuft**
+
+- OpenAI-Konfiguration erkannt und strukturiertes Antwortformat weiterverwendet
+- konfigurierbares Tageslimit, Timeout und kontrollierte Wiederholungen ergänzt
+- optionales OpenAI-Fallback-Modell vorbereitet
+- tokenbasierte Nutzungs- und Laufzeitprotokollierung sicher in Supabase gespeichert
+- verbleibend: Live-Evaluation mehrerer aufeinanderfolgender Abenteuerzüge mit dem ausgewählten Modell
+
 ## Stand zum Tagesabschluss
 
 - Charakterporträt-System und Markenshop-Platzhalter sind umgesetzt.

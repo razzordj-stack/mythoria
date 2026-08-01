@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isUuid,
+  isRetryableProviderStatus,
   parseAdventureResponse,
   providerErrorMessage,
 } from "./route";
@@ -107,6 +108,14 @@ describe("isUuid", () => {
   it("unterscheidet gültige UUIDs von beliebigem Text", () => {
     expect(isUuid(questId)).toBe(true);
     expect(isUuid("../../../fremde-datei")).toBe(false);
+  });
+});
+
+describe("isRetryableProviderStatus", () => {
+  it("wiederholt nur vorübergehende Providerfehler", () => {
+    expect(isRetryableProviderStatus(429)).toBe(true);
+    expect(isRetryableProviderStatus(503)).toBe(true);
+    expect(isRetryableProviderStatus(400)).toBe(false);
   });
 });
 

@@ -108,6 +108,7 @@ type AdventureEffects = {
 type OpenAIResponse = {
   output_text?: string;
   output?: Array<{ content?: Array<{ type?: string; text?: string }> }>;
+  usage?: { input_tokens?: number; output_tokens?: number };
   error?: { message?: string };
 };
 
@@ -131,6 +132,7 @@ export async function POST(request: Request) {
 
   const openRouterApiKey = process.env.OPENROUTER_API_KEY;
   const openAIApiKey = process.env.OPENAI_API_KEY;
+  const aiConfig = readAiConfig();
   if (!openRouterApiKey && !openAIApiKey) {
     return Response.json(
       { error: "Der KI-Spielleiter ist noch nicht konfiguriert." },
@@ -232,7 +234,11 @@ export async function POST(request: Request) {
 
   const { data: requestStatus, error: requestError } = await supabase.rpc(
     "begin_adventure_turn_request",
-    { p_request_id: requestId, p_session_id: sessionId },
+    {
+      p_request_id: requestId,
+      p_session_id: sessionId,
+      p_daily_limit: aiConfig.dailyTurnLimit,
+    },
   );
   if (requestError) {
     return Response.json(
@@ -246,7 +252,9 @@ export async function POST(request: Request) {
         error:
           requestStatus === "throttled"
             ? "Bitte warte einen Moment vor der nächsten Handlung."
-            : "Diese Handlung wird bereits verarbeitet.",
+            : requestStatus === "daily_limit"
+              ? "Das tägliche Limit für KI-Abenteuerzüge ist erreicht. Bitte versuche es morgen erneut."
+              : "Diese Handlung wird bereits verarbeitet.",
       },
       { status: 409 },
     );
@@ -265,10 +273,21 @@ export async function POST(request: Request) {
     readAdventurePreferences(authData.user.user_metadata),
   );
   let modelResult;
+  const startedAt = Date.now();
   try {
     modelResult = openAIApiKey
-      ? await requestOpenAI(openAIApiKey, instructions, history)
-      : await requestOpenRouter(openRouterApiKey!, instructions, history);
+      ? await requestOpenAIWithRetry(
+          openAIApiKey,
+          instructions,
+          history,
+          aiConfig,
+        )
+      : await requestOpenRouter(
+          openRouterApiKey!,
+          instructions,
+          history,
+          aiConfig.timeoutMs,
+        );
   } catch (caught) {
     await finishRequest(supabase, requestId, false, "provider_timeout");
     console.error(
@@ -308,6 +327,8 @@ export async function POST(request: Request) {
       { status: 502 },
     );
   }
+
+  await recordUsage(supabase, requestId, modelResult, Date.now() - startedAt);
 
   const structuredData = {
     kind: "adventure_turn",
@@ -351,6 +372,7 @@ async function requestOpenRouter(
   apiKey: string,
   instructions: string,
   history: Array<{ role: string; content: string }>,
+  timeoutMs: number,
 ) {
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
@@ -372,13 +394,16 @@ async function requestOpenRouter(
           ...history,
         ],
       }),
-      signal: AbortSignal.timeout(45_000),
+      signal: AbortSignal.timeout(timeoutMs),
     },
   );
   const data = (await response.json().catch(() => ({}))) as OpenRouterResponse;
   return {
     ok: response.ok,
     provider: "openrouter",
+    model: process.env.OPENROUTER_MODEL || "@preset/mythoria-dungeon-master",
+    inputTokens: 0,
+    outputTokens: 0,
     status: response.status,
     output: data.choices?.[0]?.message?.content ?? "",
     error: data.error?.message ?? data.choices?.[0]?.error?.message,
@@ -389,6 +414,8 @@ async function requestOpenAI(
   apiKey: string,
   instructions: string,
   history: Array<{ role: string; content: string }>,
+  model: string,
+  timeoutMs: number,
 ) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -397,7 +424,7 @@ async function requestOpenAI(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || "gpt-5.6-terra",
+      model,
       instructions,
       input: history,
       reasoning: {
@@ -413,12 +440,15 @@ async function requestOpenAI(
         },
       },
     }),
-    signal: AbortSignal.timeout(45_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   const data = (await response.json().catch(() => ({}))) as OpenAIResponse;
   return {
     ok: response.ok,
     provider: "openai",
+    model,
+    inputTokens: data.usage?.input_tokens ?? 0,
+    outputTokens: data.usage?.output_tokens ?? 0,
     status: response.status,
     output: extractOutputText(data),
     error: data.error?.message,
@@ -439,6 +469,115 @@ async function finishRequest(
   if (error) {
     console.error("Adventure request finalization failed", error.message);
   }
+}
+
+type AiConfig = {
+  dailyTurnLimit: number;
+  timeoutMs: number;
+  maxRetries: number;
+  primaryModel: string;
+  fallbackModel: string | null;
+};
+type ModelResult = {
+  ok: boolean;
+  provider: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  status: number;
+  output: string;
+  error?: string;
+};
+
+async function requestOpenAIWithRetry(
+  apiKey: string,
+  instructions: string,
+  history: Array<{ role: string; content: string }>,
+  config: AiConfig,
+): Promise<ModelResult> {
+  let last: ModelResult | null = null;
+  for (let attempt = 0; attempt <= config.maxRetries; attempt += 1) {
+    try {
+      const result = await requestOpenAI(
+        apiKey,
+        instructions,
+        history,
+        config.primaryModel,
+        config.timeoutMs,
+      );
+      if (
+        result.ok ||
+        !isRetryableProviderStatus(result.status) ||
+        attempt === config.maxRetries
+      ) {
+        last = result;
+        break;
+      }
+      last = result;
+    } catch (error) {
+      if (attempt === config.maxRetries) throw error;
+    }
+    await wait(300 * (attempt + 1));
+  }
+  if (
+    last &&
+    !last.ok &&
+    config.fallbackModel &&
+    config.fallbackModel !== config.primaryModel &&
+    isRetryableProviderStatus(last.status)
+  )
+    return requestOpenAI(
+      apiKey,
+      instructions,
+      history,
+      config.fallbackModel,
+      config.timeoutMs,
+    );
+  if (!last) throw new Error("OpenAI request failed without response");
+  return last;
+}
+
+function readAiConfig(): AiConfig {
+  return {
+    dailyTurnLimit: readBoundedEnv("AI_DAILY_TURN_LIMIT", 40, 1, 200),
+    timeoutMs: readBoundedEnv("AI_TIMEOUT_MS", 45_000, 5_000, 60_000),
+    maxRetries: readBoundedEnv("AI_MAX_RETRIES", 1, 0, 2),
+    primaryModel: process.env.OPENAI_MODEL || "gpt-5.6-terra",
+    fallbackModel: process.env.OPENAI_FALLBACK_MODEL?.trim() || null,
+  };
+}
+function readBoundedEnv(
+  name: string,
+  fallback: number,
+  minimum: number,
+  maximum: number,
+) {
+  const value = Number(process.env[name]);
+  return Number.isInteger(value) && value >= minimum && value <= maximum
+    ? value
+    : fallback;
+}
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+export function isRetryableProviderStatus(status: number) {
+  return status === 408 || status === 409 || status === 429 || status >= 500;
+}
+async function recordUsage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  requestId: string,
+  result: ModelResult,
+  durationMs: number,
+) {
+  const { error } = await supabase.rpc("record_adventure_ai_usage", {
+    p_request_id: requestId,
+    p_provider: result.provider,
+    p_model: result.model,
+    p_input_tokens: result.inputTokens,
+    p_output_tokens: result.outputTokens,
+    p_duration_ms: durationMs,
+  });
+  if (error) console.error("Adventure usage recording failed", error.message);
 }
 
 function buildInstructions(
@@ -657,10 +796,7 @@ export function isUuid(value: string) {
   );
 }
 
-export function providerErrorMessage(
-  provider: string,
-  error?: string,
-) {
+export function providerErrorMessage(provider: string, error?: string) {
   const normalized = error?.toLocaleLowerCase("en") ?? "";
   if (
     provider === "openai" &&
