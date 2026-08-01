@@ -42,6 +42,12 @@ test.describe("authentifizierte Spielwege", () => {
     await expect(page.getByRole("link", { name: "Charaktere" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Abmelden" })).toBeVisible();
 
+    await page.goto("/dashboard/admin");
+    await expect(
+      page.getByRole("alert").getByText("Zugriff verweigert"),
+    ).toBeVisible();
+
+    await page.goto("/dashboard");
     await page.getByRole("button", { name: "Abmelden" }).click();
     await expect(page).toHaveURL(/\/$/);
   });

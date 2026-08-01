@@ -138,6 +138,8 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 - Reise und Ortsentdeckung automatisiert geprüft
 - Quest annehmen und abbrechen automatisiert geprüft
 - Kampf beginnen und kontrolliert fliehen automatisiert geprüft
+- Zugriffsschutz: reguläres Testkonto wird vom Adminbereich ausgeschlossen
+- offen für vollständigen Abschluss: getrenntes Admin-Testkonto und ein reguläres Ziel-Testkonto für sichere Moderationstests
 - Rollen- und Moderationszugriffe testen
 
 **Abnahmekriterium:** Kritische Benutzerwege werden automatisch gegen eine sichere Testumgebung geprüft.
