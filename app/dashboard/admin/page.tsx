@@ -229,6 +229,12 @@ export default function AdminPage() {
             >
               Inhaltsbalance
             </Link>
+            <Link
+              href="/dashboard/admin/ai-operations"
+              className="mythoria-button-secondary"
+            >
+              KI-Monitoring
+            </Link>
             <MythoriaBadge variant="gold">
               {roleLabel(overview.role)}
             </MythoriaBadge>
