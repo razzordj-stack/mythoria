@@ -11,12 +11,15 @@ export default function ProfilePage() {
   const [avatar, setAvatar] = useState("");
   const [language, setLanguage] = useState("de");
   const [createdAt, setCreatedAt] = useState("");
+  const [membershipTier, setMembershipTier] = useState<"free" | "premium">(
+    "free",
+  );
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   useEffect(() => {
-    void supabase.auth.getUser().then(({ data }) => {
+    void Promise.all([supabase.auth.getUser(), supabase.rpc("get_current_membership")]).then(([{ data }, membershipResult]) => {
       const u = data.user;
       if (u) {
         setEmail(u.email ?? "");
@@ -37,6 +40,13 @@ export default function ProfilePage() {
         );
         setCreatedAt(u.created_at);
       }
+      if (
+        membershipResult.data &&
+        typeof membershipResult.data === "object" &&
+        "tier" in membershipResult.data &&
+        membershipResult.data.tier === "premium"
+      )
+        setMembershipTier("premium");
     });
   }, [supabase]);
   async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
@@ -144,6 +154,12 @@ export default function ProfilePage() {
             {createdAt
               ? new Date(createdAt).toLocaleDateString("de-DE")
               : "Wird geladen …"}
+          </p>
+          <p className="mt-5 text-xs font-bold tracking-wide text-[var(--mythoria-text-disabled)]">
+            MITGLIEDSCHAFT
+          </p>
+          <p className="mt-1 text-sm text-[var(--mythoria-gold-light)]">
+            {membershipTier === "premium" ? "Premium · Chronist" : "Kostenloser Abenteurer"}
           </p>
         </aside>
         <form onSubmit={save} className="mythoria-panel space-y-5 p-6 sm:p-8">

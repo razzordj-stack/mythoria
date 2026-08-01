@@ -236,6 +236,14 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 - Release Notes, Betriebs-Handbuch und technische Abnahme sind dokumentiert.
 - Die öffentliche Produktfreigabe bleibt bis zur Bestätigung der rechtlichen Angaben, des externen Auth-Smoketests und der KI-Kostenlimits gesperrt.
 
+## Premium-Mitgliedschaft
+
+**Status: technische Grundlage fertig, Zahlungsfreigabe offen**
+
+- Kostenloser und Premium-Tarif sind als serverseitig geprüfte Mitgliedschaft angelegt.
+- Premium erhöht ausschließlich das tägliche KI-Abenteuerlimit und verändert keine Spielwerte.
+- Stripe-Checkout und der signierte Zahlungs-Webhook bleiben bis zur Bereitstellung echter Stripe-Zugangsdaten und Preis-IDs offen.
+
 ## Empfohlener Wiedereinstieg
 
 Beim nächsten Arbeitstag mit der **Betriebs- und Feedbackphase** fortfahren: reale Spielsitzungen auswerten, das KI-Nutzungsprotokoll beobachten sowie Monitoring und Rollback-Ablauf dokumentieren. Der Markenshop bleibt bis zur Auswahl eines Anbieters und zur Festlegung echter Produkte ein klar gekennzeichneter Platzhalter.

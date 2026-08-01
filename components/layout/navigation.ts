@@ -22,6 +22,7 @@ export const dashboardNavigation: NavigationItem[] = [
     match: "prefix",
   },
   { label: "Markenshop", icon: "M", href: "/dashboard/shop", match: "prefix" },
+  { label: "Premium", icon: "✦", href: "/dashboard/premium", match: "prefix" },
   { label: "Gemeinschaft", icon: "♧", href: "/dashboard/social", match: "prefix" },
   { label: "Meldungen", icon: "◇", href: "/dashboard/notifications", match: "prefix" },
   { label: "Administration", icon: "♜", href: "/dashboard/admin", match: "prefix" },

@@ -133,6 +133,8 @@ export async function POST(request: Request) {
   const openRouterApiKey = process.env.OPENROUTER_API_KEY;
   const openAIApiKey = process.env.OPENAI_API_KEY;
   const aiConfig = readAiConfig();
+  const { data: membership } = await supabase.rpc("get_current_membership");
+  const dailyTurnLimit = resolveDailyTurnLimit(aiConfig, membership);
   if (!openRouterApiKey && !openAIApiKey) {
     return Response.json(
       { error: "Der KI-Spielleiter ist noch nicht konfiguriert." },
@@ -237,7 +239,7 @@ export async function POST(request: Request) {
     {
       p_request_id: requestId,
       p_session_id: sessionId,
-      p_daily_limit: aiConfig.dailyTurnLimit,
+      p_daily_limit: dailyTurnLimit,
     },
   );
   if (requestError) {
@@ -473,6 +475,7 @@ async function finishRequest(
 
 type AiConfig = {
   dailyTurnLimit: number;
+  premiumDailyTurnLimit: number;
   timeoutMs: number;
   maxRetries: number;
   primaryModel: string;
@@ -540,11 +543,22 @@ async function requestOpenAIWithRetry(
 function readAiConfig(): AiConfig {
   return {
     dailyTurnLimit: readBoundedEnv("AI_DAILY_TURN_LIMIT", 40, 1, 200),
+    premiumDailyTurnLimit: readBoundedEnv(
+      "AI_PREMIUM_DAILY_TURN_LIMIT",
+      120,
+      1,
+      200,
+    ),
     timeoutMs: readBoundedEnv("AI_TIMEOUT_MS", 45_000, 5_000, 60_000),
     maxRetries: readBoundedEnv("AI_MAX_RETRIES", 1, 0, 2),
     primaryModel: process.env.OPENAI_MODEL || "gpt-5.6-terra",
     fallbackModel: process.env.OPENAI_FALLBACK_MODEL?.trim() || null,
   };
+}
+export function resolveDailyTurnLimit(config: AiConfig, membership: unknown) {
+  return isRecord(membership) && membership.tier === "premium"
+    ? config.premiumDailyTurnLimit
+    : config.dailyTurnLimit;
 }
 function readBoundedEnv(
   name: string,

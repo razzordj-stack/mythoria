@@ -4,6 +4,7 @@ import {
   isRetryableProviderStatus,
   parseAdventureResponse,
   providerErrorMessage,
+  resolveDailyTurnLimit,
 } from "./route";
 
 const questId = "123e4567-e89b-42d3-a456-426614174000";
@@ -116,6 +117,26 @@ describe("isRetryableProviderStatus", () => {
     expect(isRetryableProviderStatus(429)).toBe(true);
     expect(isRetryableProviderStatus(503)).toBe(true);
     expect(isRetryableProviderStatus(400)).toBe(false);
+  });
+});
+
+describe("resolveDailyTurnLimit", () => {
+  const config = {
+    dailyTurnLimit: 40,
+    premiumDailyTurnLimit: 120,
+    timeoutMs: 45_000,
+    maxRetries: 1,
+    primaryModel: "test-model",
+    fallbackModel: null,
+  };
+
+  it("nutzt das Basislimit ohne aktive Premium-Mitgliedschaft", () => {
+    expect(resolveDailyTurnLimit(config, { tier: "free" })).toBe(40);
+    expect(resolveDailyTurnLimit(config, null)).toBe(40);
+  });
+
+  it("nutzt das erhöhte Limit für Premium-Mitglieder", () => {
+    expect(resolveDailyTurnLimit(config, { tier: "premium" })).toBe(120);
   });
 });
 
