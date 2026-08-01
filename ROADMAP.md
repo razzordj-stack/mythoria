@@ -201,6 +201,15 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 - Echtzeit-Gruppenchat für aktive Spielsitzungen
 - Realtime-Synchronisierung für Sitzungen und Nachrichten
 
+### Phase 11 – Abschluss
+
+**Status: abgeschlossen**
+
+- zusammenhängender Inhaltsbogen von Silberhain über Nebelmoor und Aschgrat bis zur Hohlen Krone und Sternfall-Küste
+- fünf neue Gegner, fünf Quests, drei Händler, sechs Handelswaren und drei Rezepte ergänzt
+- Belohnungen, Gegnerstärke und Rezeptkosten stufenweise von Stufe 2 bis 8 ausbalanciert
+- geschützte Admin-Auswertung für Inhalt, Belohnungsspannen, Gegnerstärke und Kampfdaten umgesetzt
+
 ## Stand zum Tagesabschluss
 
 - Charakterporträt-System und Markenshop-Platzhalter sind umgesetzt.

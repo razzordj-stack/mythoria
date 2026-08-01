@@ -1,0 +1,49 @@
+begin;
+
+insert into public.enemies(id,slug,name,description,enemy_type,level,max_health,attack,defense,experience_reward,gold_reward,icon,status) values
+('20000000-0000-4000-8000-000000000005','mondspinne','Mondspinne','Eine silbrig schimmernde Jägerin aus den tiefen Netzen des Silberhains.','beast',2,54,10,4,82,28,'◈','published'),
+('20000000-0000-4000-8000-000000000006','moorhexe','Moorhexe','Eine verbitterte Zauberin, die Nebel und Dornen gegen Eindringlinge lenkt.','humanoid',3,78,14,6,132,48,'✧','published'),
+('20000000-0000-4000-8000-000000000007','aschkoloss','Aschkoloss','Ein brennender Steinriese, der die alten Stollen bewacht.','construct',4,108,18,10,205,78,'◆','published'),
+('20000000-0000-4000-8000-000000000008','kronenwiederganger','Kronenwiedergänger','Ein gefallener Palastwächter aus der Hohlen Krone.','undead',6,158,24,15,360,145,'♜','published'),
+('20000000-0000-4000-8000-000000000009','sternfall-hydra','Sternfall-Hydra','Ein uraltes Wesen, dessen Köpfe im Licht des gefallenen Sterns glühen.','beast',8,238,33,21,620,260,'✦','published')
+on conflict(id) do update set slug=excluded.slug,name=excluded.name,description=excluded.description,enemy_type=excluded.enemy_type,level=excluded.level,max_health=excluded.max_health,attack=excluded.attack,defense=excluded.defense,experience_reward=excluded.experience_reward,gold_reward=excluded.gold_reward,icon=excluded.icon,status=excluded.status;
+
+insert into public.quests(id,title,description,quest_type,difficulty,level_requirement,experience_reward,gold_reward,objectives,status) values
+('10000000-0000-4000-8000-000000000011','Das Netz aus Mondlicht','Im Silberhain verschwinden Kundschafter an einem Pfad, der nur im Mondschein sichtbar wird.','story','normal',2,115,48,'[{"text":"Reise in den Silberhain"},{"text":"Finde den Mondpfad"},{"text":"Besiege die Mondspinne"}]'::jsonb,'available'),
+('10000000-0000-4000-8000-000000000012','Die verlorene Moorlaterne','Eine Schutzlaterne ist im Nebelmoor erloschen. Ohne sie erreicht kein Konvoi die Grenzmarken.','recovery','normal',3,175,72,'[{"text":"Erreiche das Nebelmoor"},{"text":"Folge den Irrlichtern"},{"text":"Entzünde die Moorlaterne"}]'::jsonb,'available'),
+('10000000-0000-4000-8000-000000000013','Herz aus Asche','Die Bergleute des Aschgrats bitten um Hilfe gegen einen Koloss, der den einzigen sicheren Stollen blockiert.','story','hard',4,265,110,'[{"text":"Betritt den Aschgrat"},{"text":"Sichere den Stollen"},{"text":"Besiege den Aschkoloss"}]'::jsonb,'available'),
+('10000000-0000-4000-8000-000000000014','Der Eid der Hohlen Krone','Ein alter Schwur hält die Seelen der Palastwache gefangen. Löse ihn, bevor die Ruinen erwachen.','story','heroic',6,455,190,'[{"text":"Erreiche die Hohle Krone"},{"text":"Finde das Eidsiegel"},{"text":"Besiege den Kronenwiedergänger"}]'::jsonb,'available'),
+('10000000-0000-4000-8000-000000000015','Splitter des Sternfalls','Ein Splitter des gefallenen Sterns droht die Küste zu verschlingen. Nur eine erfahrene Gruppe kann ihn bergen.','story','heroic',8,760,330,'[{"text":"Reise zur Sternfall-Küste"},{"text":"Erkunde die Gezeitenhöhle"},{"text":"Besiege die Sternfall-Hydra"}]'::jsonb,'available')
+on conflict(id) do update set title=excluded.title,description=excluded.description,quest_type=excluded.quest_type,difficulty=excluded.difficulty,level_requirement=excluded.level_requirement,experience_reward=excluded.experience_reward,gold_reward=excluded.gold_reward,objectives=excluded.objectives,status=excluded.status;
+
+insert into public.merchants(id,slug,name,description,location_id,price_modifier,icon,status) values
+('40000000-0000-4000-8000-000000000002','silberzweig','Silberzweig-Apothek','Elen Fadenblatt verkauft Kräuter und Elixiere aus dem Silberhain.','10000000-0000-4000-8000-000000000001',0.95,'⚗','published'),
+('40000000-0000-4000-8000-000000000003','moorpfad','Moorpfad-Versorgung','Eine wetterfeste Händlerin bietet Ausrüstung für die Dämme des Nebelmoors.','10000000-0000-4000-8000-000000000004',1.08,'⚖','published'),
+('40000000-0000-4000-8000-000000000004','aschhandel','Aschgrat-Handelsposten','Werkzeuge und seltene Erze für alle, die den vulkanischen Norden überleben wollen.','10000000-0000-4000-8000-000000000003',1.15,'⚒','published')
+on conflict(id) do update set name=excluded.name,description=excluded.description,location_id=excluded.location_id,price_modifier=excluded.price_modifier,icon=excluded.icon,status=excluded.status;
+
+insert into public.merchant_items(id,merchant_id,name,description,item_type,rarity,price,stock,attack_bonus,defense_bonus,magic_bonus,health_bonus,mana_bonus,equipment_slot,sort_order) values
+('41000000-0000-4000-8000-000000000011','40000000-0000-4000-8000-000000000002','Mondfarn','Leuchtendes Kraut für Alchemie.','material','uncommon',14,60,0,0,0,0,0,null,10),
+('41000000-0000-4000-8000-000000000012','40000000-0000-4000-8000-000000000002','Elixier des Silberpfads','Heilt Wunden und stärkt den Willen.','potion','uncommon',58,18,0,0,0,45,12,null,20),
+('41000000-0000-4000-8000-000000000013','40000000-0000-4000-8000-000000000003','Moorleder-Mantel','Imprägniertes Leder gegen Kälte und Dornen.','armor','rare',165,5,0,7,0,12,0,'chest',10),
+('41000000-0000-4000-8000-000000000014','40000000-0000-4000-8000-000000000003','Irrlichtglas','Versiegeltes Glas mit flackerndem Nebellicht.','material','rare',48,30,0,0,0,0,0,null,20),
+('41000000-0000-4000-8000-000000000015','40000000-0000-4000-8000-000000000004','Sternenerz','Dichtes Erz mit arkanen Einschlüssen.','material','rare',64,35,0,0,0,0,0,null,10),
+('41000000-0000-4000-8000-000000000016','40000000-0000-4000-8000-000000000004','Aschgrat-Hammer','Eine schwere Waffe für geübte Hände.','weapon','rare',230,4,8,0,0,0,0,'main_hand',20)
+on conflict(id) do update set name=excluded.name,description=excluded.description,item_type=excluded.item_type,rarity=excluded.rarity,price=excluded.price,stock=excluded.stock,attack_bonus=excluded.attack_bonus,defense_bonus=excluded.defense_bonus,magic_bonus=excluded.magic_bonus,health_bonus=excluded.health_bonus,mana_bonus=excluded.mana_bonus,equipment_slot=excluded.equipment_slot,sort_order=excluded.sort_order;
+
+insert into public.crafting_recipes(id,name,description,required_level,gold_cost,result_name,result_description,result_item_type,result_rarity,result_attack_bonus,result_defense_bonus,result_magic_bonus,result_health_bonus,result_mana_bonus,result_value,result_equipment_slot,icon,sort_order) values
+('42000000-0000-4000-8000-000000000011','Silberpfad-Elixier','Verbindet Mondfarn mit klarer Essenz.',2,12,'Silberpfad-Elixier','Ein Elixier für lange Reisen.','potion','uncommon',0,0,0,45,12,52,null,'⚗',40),
+('42000000-0000-4000-8000-000000000012','Moorwacht-Mantel','Moorleder wird mit Irrlichtglas versiegelt.',4,42,'Moorwacht-Mantel','Schutz gegen die Gefahren der Grenzmarken.','armor','rare',0,9,1,15,0,170,'chest','✦',50),
+('42000000-0000-4000-8000-000000000013','Sternenbrecher','Eine schwere Klinge aus Sternenerz und Runenstahl.',6,85,'Sternenbrecher','Eine Waffe gegen uralte Kreaturen.','weapon','epic',12,0,5,0,0,330,'main_hand','⚔',60)
+on conflict(id) do update set name=excluded.name,description=excluded.description,required_level=excluded.required_level,gold_cost=excluded.gold_cost,result_name=excluded.result_name,result_description=excluded.result_description,result_item_type=excluded.result_item_type,result_rarity=excluded.result_rarity,result_attack_bonus=excluded.result_attack_bonus,result_defense_bonus=excluded.result_defense_bonus,result_magic_bonus=excluded.result_magic_bonus,result_health_bonus=excluded.result_health_bonus,result_mana_bonus=excluded.result_mana_bonus,result_value=excluded.result_value,result_equipment_slot=excluded.result_equipment_slot,icon=excluded.icon,sort_order=excluded.sort_order;
+insert into public.recipe_ingredients(recipe_id,item_name,quantity) values
+('42000000-0000-4000-8000-000000000011','Mondfarn',2),('42000000-0000-4000-8000-000000000011','Leere Phiole',1),
+('42000000-0000-4000-8000-000000000012','Irrlichtglas',2),('42000000-0000-4000-8000-000000000012','Moorleder-Mantel',1),
+('42000000-0000-4000-8000-000000000013','Sternenerz',3),('42000000-0000-4000-8000-000000000013','Runensplitter',2)
+on conflict(recipe_id,item_name) do update set quantity=excluded.quantity;
+
+create or replace function public.get_content_balance_overview() returns jsonb language plpgsql stable security definer set search_path=public as $$begin if not public.is_admin(array['super_admin','content_admin']) then raise exception 'content admin access required';end if;return jsonb_build_object('locations',(select count(*) from public.world_locations where status='published'),'quests',(select count(*) from public.quests where status='available'),'enemies',(select count(*) from public.enemies where status='published'),'recipes',(select count(*) from public.crafting_recipes where status='published'),'merchants',(select count(*) from public.merchants where status='published'),'questReward',(select jsonb_build_object('xpMin',min(experience_reward),'xpMax',max(experience_reward),'goldMin',min(gold_reward),'goldMax',max(gold_reward)) from public.quests where status='available'),'enemyStrength',(select jsonb_build_object('levelMin',min(level),'levelMax',max(level),'healthMin',min(max_health),'healthMax',max(max_health)) from public.enemies where status='published'),'activity',(select jsonb_build_object('combatSessions7d',count(*) filter(where started_at>=now()-interval '7 days'),'completedCombats7d',count(*) filter(where completed_at>=now()-interval '7 days' and status='victory')) from public.combat_sessions));end;$$;
+revoke all on function public.get_content_balance_overview() from public,anon;
+grant execute on function public.get_content_balance_overview() to authenticated;
+notify pgrst,'reload schema';
+commit;
