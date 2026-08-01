@@ -31,7 +31,8 @@ export function MythoriaLogo({
         width={config.width}
         height={Math.round((config.width * 2) / 3)}
         sizes={config.sizes}
-        preload={priority}
+        loading={priority ? "eager" : "lazy"}
+        style={{ height: "auto" }}
         className={[
           "h-auto max-w-full select-none object-contain",
           hasGlow ? "drop-shadow-[0_0_28px_rgba(147,182,64,0.14)]" : "",
