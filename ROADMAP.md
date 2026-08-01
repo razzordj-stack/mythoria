@@ -150,7 +150,7 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 
 - gemeinsame Gruppen-Sitzungen tatsächlich spielbar machen
 - Gruppenleiter- und Bereitschaftsabläufe vervollständigen
-- Echtzeitstatus mit Supabase Realtime prüfen
+- Echtzeitstatus für Gruppen, Mitglieder und Einladungen über Supabase Realtime ergänzt
 - Gildenrollen und Gruppenkommunikation erweitern
 
 **Abnahmekriterium:** Zwei angemeldete Benutzer können zuverlässig eine gemeinsame Gruppe bilden und synchron verwalten.
