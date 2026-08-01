@@ -127,20 +127,20 @@ Ein Hosting-Ziel und die endgültige Produktionsdomain wurden noch nicht festgel
 
 ### Phase 9 – Authentifizierte End-to-End-Tests
 
-**Status: läuft – Kernabläufe automatisiert geprüft**
+**Status: abgeschlossen**
 
 - separates, bestätigtes Testkonto über `E2E_TEST_EMAIL` und `E2E_TEST_PASSWORD` eingebunden
 - Login, Dashboard und Logout automatisiert geprüft
 - kontrollierten Charakter-Erstellungs- und Bereinigungstest erfolgreich ausgeführt
-- 18 Browser-Tests bestanden; zwei parallele Mobil-Auth-Varianten werden bewusst übersprungen, da die App eine globale Abmeldung ausführt
+- 19 Browser-Tests bestanden; drei parallele Mobil-Auth-Varianten werden bewusst übersprungen, da die App eine globale Abmeldung ausführt
 - Charaktererstellung und -bearbeitung automatisiert geprüft
 - Inventar anlegen, ausrüsten und bereinigen automatisiert geprüft
 - Reise und Ortsentdeckung automatisiert geprüft
 - Quest annehmen und abbrechen automatisiert geprüft
-- Kampf beginnen und kontrolliert fliehen automatisiert geprüft
+- Kampf beginnen und eine serverseitig protokollierte Fluchtaktion automatisiert geprüft
 - Zugriffsschutz: reguläres Testkonto wird vom Adminbereich ausgeschlossen
-- offen für vollständigen Abschluss: getrenntes Admin-Testkonto und ein reguläres Ziel-Testkonto für sichere Moderationstests
-- Rollen- und Moderationszugriffe testen
+- getrennte Admin- und Mitglieder-Testkonten über `E2E_ADMIN_*` sowie `E2E_MEMBER_*` eingebunden
+- Rollen- und Moderationsschutz geprüft: Mitglied wird abgewiesen, Admin sperrt das dedizierte Mitgliederkonto kontrolliert, reaktiviert es und dessen erneute Anmeldung wird bestätigt
 
 **Abnahmekriterium:** Kritische Benutzerwege werden automatisch gegen eine sichere Testumgebung geprüft.
 

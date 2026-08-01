@@ -2,7 +2,28 @@ import { expect, test, type Page } from "@playwright/test";
 
 const email = process.env.E2E_TEST_EMAIL;
 const password = process.env.E2E_TEST_PASSWORD;
+const adminEmail = process.env.E2E_ADMIN_EMAIL;
+const adminPassword = process.env.E2E_ADMIN_PASSWORD;
+const memberEmail = process.env.E2E_MEMBER_EMAIL;
+const memberPassword = process.env.E2E_MEMBER_PASSWORD;
 const hasTestAccount = Boolean(email && password);
+const hasAdminTestAccounts = Boolean(
+  adminEmail && adminPassword && memberEmail && memberPassword,
+);
+
+async function signIn(page: Page, loginEmail: string, loginPassword: string) {
+  await page.goto("/login");
+  await page.getByLabel("E-Mail").fill(loginEmail);
+  await page.getByLabel("Passwort", { exact: true }).fill(loginPassword);
+  await page.getByRole("button", { name: "Einloggen" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+}
+
+async function signOut(page: Page) {
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Abmelden" }).click();
+  await expect(page).toHaveURL(/\/$/);
+}
 
 async function removeLeftoverTestCharacters(page: Page) {
   await page.goto("/dashboard/characters");
@@ -33,12 +54,7 @@ test.describe("authentifizierte Spielwege", () => {
       testInfo.project.name !== "chromium",
       "Der Test meldet sich global ab und verwendet deshalb nur eine Browser-Sitzung pro Testkonto.",
     );
-    await page.goto("/login");
-    await page.getByLabel("E-Mail").fill(email!);
-    await page.getByLabel("Passwort", { exact: true }).fill(password!);
-    await page.getByRole("button", { name: "Einloggen" }).click();
-
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await signIn(page, email!, password!);
     await expect(page.getByRole("link", { name: "Charaktere" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Abmelden" })).toBeVisible();
 
@@ -47,9 +63,7 @@ test.describe("authentifizierte Spielwege", () => {
       page.getByRole("alert").getByText("Zugriff verweigert"),
     ).toBeVisible();
 
-    await page.goto("/dashboard");
-    await page.getByRole("button", { name: "Abmelden" }).click();
-    await expect(page).toHaveURL(/\/$/);
+    await signOut(page);
   });
 
   test("Testkonto kann einen Charakter erstellen und wieder bereinigen", async ({
@@ -62,11 +76,7 @@ test.describe("authentifizierte Spielwege", () => {
 
     const characterName = `E2E Probeheld ${Date.now()}`;
 
-    await page.goto("/login");
-    await page.getByLabel("E-Mail").fill(email!);
-    await page.getByLabel("Passwort", { exact: true }).fill(password!);
-    await page.getByRole("button", { name: "Einloggen" }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await signIn(page, email!, password!);
 
     await removeLeftoverTestCharacters(page);
 
@@ -153,10 +163,10 @@ test.describe("authentifizierte Spielwege", () => {
       .filter({ has: page.getByRole("heading", { name: "Nebelwolf" }) });
     await enemyCard.getByRole("button", { name: "Kampf beginnen" }).click();
     await expect(page.getByRole("button", { name: "Fliehen" })).toBeVisible();
+    const combatEvents = page.locator('[aria-live="polite"] article');
+    const eventCountBeforeFleeing = await combatEvents.count();
     await page.getByRole("button", { name: "Fliehen" }).click();
-    await expect(
-      page.getByRole("button", { name: "Rasten und vollständig erholen" }),
-    ).toBeVisible();
+    await expect.poll(() => combatEvents.count()).toBeGreaterThan(eventCountBeforeFleeing);
 
     await page.goto("/dashboard/characters");
     const deleteButton = page.getByRole("button", {
@@ -166,5 +176,58 @@ test.describe("authentifizierte Spielwege", () => {
     page.once("dialog", (dialog) => dialog.accept());
     await deleteButton.click();
     await expect(deleteButton).toBeHidden();
+    await signOut(page);
+  });
+
+  test("Admin kann ein Mitglied kontrolliert moderieren und wieder freischalten", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium",
+      "Der Moderationstest verwendet nacheinander getrennte globale Sitzungen.",
+    );
+    test.skip(
+      !hasAdminTestAccounts,
+      "E2E_ADMIN_* und E2E_MEMBER_* mÃ¼ssen fÃ¼r den Moderationstest gesetzt sein.",
+    );
+
+    const memberName = `E2E Mitglied ${Date.now()}`;
+
+    await signIn(page, memberEmail!, memberPassword!);
+    await page.goto("/dashboard/admin");
+    await expect(
+      page.getByRole("alert").getByText("Zugriff verweigert"),
+    ).toBeVisible();
+
+    await page.goto("/dashboard/profile");
+    await page.getByLabel("Anzeigename").fill(memberName);
+    await page.getByRole("button", { name: "Profil speichern" }).click();
+    await expect(page.getByText("Profil gespeichert.")).toBeVisible();
+    await signOut(page);
+
+    await signIn(page, adminEmail!, adminPassword!);
+    await page.goto("/dashboard/admin");
+    await expect(
+      page.getByRole("heading", { name: "Systemverwaltung" }),
+    ).toBeVisible();
+
+    const memberCard = page.locator("article").filter({ hasText: memberName });
+    await expect(memberCard).toBeVisible();
+    await expect(memberCard.getByText("active", { exact: true })).toBeVisible();
+
+    page.once("dialog", (dialog) => dialog.accept("Automatisierter E2E-Moderationstest"));
+    await memberCard.getByRole("button", { name: "Sperren" }).click();
+    await expect(memberCard.getByText("suspended", { exact: true })).toBeVisible();
+    await expect(page.getByText("Benutzerstatus aktualisiert.")).toBeVisible();
+
+    await memberCard.getByRole("button", { name: "Aktiv" }).click();
+    await expect(memberCard.getByText("active", { exact: true })).toBeVisible();
+    await expect(page.getByText("Benutzerstatus aktualisiert.")).toBeVisible();
+    await expect(page.getByText("user_status_changed", { exact: true }).first()).toBeVisible();
+    await signOut(page);
+
+    await signIn(page, memberEmail!, memberPassword!);
+    await expect(page.getByRole("link", { name: "Charaktere" })).toBeVisible();
+    await signOut(page);
   });
 });
